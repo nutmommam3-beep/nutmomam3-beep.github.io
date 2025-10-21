@@ -1,2250 +1,298 @@
-<!doctype html>
-<html lang="th">
- <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Online Club</title>
-  <script src="/_sdk/element_sdk.js"></script>
-  <script src="/_sdk/data_sdk.js"></script>
-  <style>
-
-  
-        body {
-            box-sizing: border-box;
-            margin: 0;
-            padding: 0;
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
-            min-height: 100%;
-            color: #333;
-            overflow-x: hidden;
-        }
-
-        html {
-            height: 100%;
-            overflow-x: hidden;
-        }
-
-        .glass-container {
-            background: rgba(255, 255, 255, 0.1);
-            backdrop-filter: blur(20px);
-            border-radius: 20px;
-            border: 1px solid rgba(255, 255, 255, 0.2);
-            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
-            margin: 20px;
-            padding: 30px;
-            max-width: 800px;
-            margin: 20px auto;
-            margin-bottom: 40px;
-        }
-
-        .page {
-            display: none;
-        }
-
-        .page.active {
-            display: block;
-        }
-
-        .menu-grid {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 20px;
-            margin-top: 30px;
-        }
-
-        @media (min-width: 600px) {
-            .menu-grid {
-                grid-template-columns: repeat(4, 1fr);
-            }
-        }
-
-        .menu-button {
-            background: rgba(255, 255, 255, 0.15);
-            backdrop-filter: blur(10px);
-            border: 1px solid rgba(255, 255, 255, 0.3);
-            border-radius: 15px;
-            padding: 30px 20px;
-            color: white;
-            font-size: 18px;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            text-align: center;
-            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
-        }
-
-        .menu-button:hover {
-            background: rgba(255, 255, 255, 0.25);
-            transform: translateY(-2px);
-            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15);
-        }
-
-        .form-group {
-            margin-bottom: 20px;
-        }
-
-        .form-label {
-            display: block;
-            color: white;
-            font-weight: 600;
-            margin-bottom: 8px;
-            font-size: 16px;
-        }
-
-        .form-input {
-            width: 100%;
-            padding: 12px 15px;
-            border: 1px solid rgba(255, 255, 255, 0.3);
-            border-radius: 10px;
-            background: rgba(255, 255, 255, 0.1);
-            color: white;
-            font-size: 16px;
-            backdrop-filter: blur(10px);
-            box-sizing: border-box;
-        }
-
-        .form-input::placeholder {
-            color: rgba(255, 255, 255, 0.7);
-        }
-
-        .form-input:focus {
-            outline: none;
-            border-color: rgba(255, 255, 255, 0.5);
-            background: rgba(255, 255, 255, 0.15);
-        }
-
-        .score-row {
-            display: flex;
-            gap: 10px;
-            align-items: center;
-            margin-bottom: 10px;
-        }
-
-        .score-input {
-            width: 80px;
-            padding: 8px 10px;
-            border: 1px solid rgba(255, 255, 255, 0.3);
-            border-radius: 8px;
-            background: rgba(255, 255, 255, 0.1);
-            color: white;
-            text-align: center;
-            backdrop-filter: blur(10px);
-        }
-
-        .score-label {
-            color: white;
-            font-size: 14px;
-            flex: 1;
-        }
-
-        .total-score {
-            background: rgba(255, 255, 255, 0.2);
-            border-radius: 10px;
-            padding: 15px;
-            margin: 20px 0;
-            text-align: center;
-        }
-
-        .total-score-text {
-            color: white;
-            font-size: 18px;
-            font-weight: 700;
-        }
-
-        .submit-button {
-            width: 100%;
-            padding: 15px;
-            background: linear-gradient(45deg, #00b894, #00a085);
-            border: none;
-            border-radius: 12px;
-            color: white;
-            font-size: 18px;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            margin-top: 20px;
-        }
-
-        .submit-button:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 6px 20px rgba(0, 184, 148, 0.4);
-        }
-
-        .submit-button:disabled {
-            opacity: 0.6;
-            cursor: not-allowed;
-            transform: none;
-        }
-
-        .back-button {
-            background: rgba(255, 255, 255, 0.2);
-            border: 1px solid rgba(255, 255, 255, 0.3);
-            border-radius: 10px;
-            padding: 10px 20px;
-            color: white;
-            cursor: pointer;
-            margin-bottom: 20px;
-            font-size: 14px;
-        }
-
-        .back-button:hover {
-            background: rgba(255, 255, 255, 0.3);
-        }
-
-        .date-inputs {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 15px;
-            margin-bottom: 20px;
-        }
-
-        .search-button {
-            width: 100%;
-            padding: 12px;
-            background: linear-gradient(45deg, #00b894, #00a085);
-            border: none;
-            border-radius: 10px;
-            color: white;
-            font-size: 16px;
-            font-weight: 600;
-            cursor: pointer;
-            margin-bottom: 20px;
-        }
-
-        .search-button:hover {
-            transform: translateY(-1px);
-            box-shadow: 0 4px 15px rgba(0, 184, 148, 0.4);
-        }
-
-        .ranking-grid {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 15px;
-            margin-bottom: 30px;
-        }
-
-        .ranking-card {
-            background: rgba(255, 255, 255, 0.15);
-            border-radius: 12px;
-            padding: 15px;
-            text-align: center;
-        }
-
-        .ranking-title {
-            color: white;
-            font-weight: 600;
-            margin-bottom: 10px;
-            font-size: 14px;
-        }
-
-        .ranking-item {
-            color: white;
-            font-size: 12px;
-            margin: 5px 0;
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-        }
-
-        .low-score-section {
-            background: rgba(255, 0, 0, 0.2);
-            border: 2px solid rgba(255, 0, 0, 0.4);
-            border-radius: 12px;
-            padding: 20px;
-            margin-top: 20px;
-        }
-
-        .low-score-title {
-            color: #ff4757;
-            font-weight: 700;
-            font-size: 16px;
-            margin-bottom: 15px;
-            text-align: center;
-        }
-
-        .low-score-item {
-            color: #ff4757;
-            font-size: 14px;
-            margin: 8px 0;
-            display: flex;
-            justify-content: space-between;
-            font-weight: 600;
-        }
-
-        .toast {
-            position: fixed;
-            top: 20px;
-            right: 20px;
-            background: rgba(0, 0, 0, 0.8);
-            color: white;
-            padding: 15px 20px;
-            border-radius: 10px;
-            z-index: 1000;
-            transform: translateX(100%);
-            transition: transform 0.3s ease;
-        }
-
-        .toast.show {
-            transform: translateX(0);
-        }
-
-        .toast.success {
-            background: rgba(46, 204, 113, 0.9);
-        }
-
-        .toast.error {
-            background: rgba(231, 76, 60, 0.9);
-        }
-
-        .loading {
-            display: inline-block;
-            width: 20px;
-            height: 20px;
-            border: 2px solid rgba(255, 255, 255, 0.3);
-            border-radius: 50%;
-            border-top-color: white;
-            animation: spin 1s ease-in-out infinite;
-            margin-right: 10px;
-        }
-
-        @keyframes spin {
-            to { transform: rotate(360deg); }
-        }
-
-        .page-title {
-            color: white;
-            font-size: 24px;
-            font-weight: 700;
-            text-align: center;
-            margin-bottom: 30px;
-        }
-
-        .logo {
-            display: block;
-            width: 150px;
-            height: auto;
-            margin: 0 auto 20px auto;
-        }
-
-        .logo-top-right {
-            position: absolute;
-            top: 20px;
-            right: 20px;
-            width: 80px;
-            height: auto;
-            z-index: 100;
-        }
-
-        .page-container {
-            position: relative;
-        }
-
-        .section-title {
-            color: white;
-            font-size: 18px;
-            font-weight: 600;
-            margin: 25px 0 15px 0;
-            border-bottom: 2px solid rgba(255, 255, 255, 0.3);
-            padding-bottom: 8px;
-        }
-
-        .summary-table-container {
-            background: rgba(255, 255, 255, 0.1);
-            backdrop-filter: blur(15px);
-            border-radius: 16px;
-            border: 1px solid rgba(255, 255, 255, 0.2);
-            margin-bottom: 30px;
-            overflow: hidden;
-            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
-        }
-
-        .table-header {
-            background: rgba(255, 255, 255, 0.15);
-            padding: 20px;
-            border-bottom: 1px solid rgba(255, 255, 255, 0.2);
-        }
-
-        .table-title {
-            color: white;
-            font-size: 20px;
-            font-weight: 700;
-            margin: 0;
-            text-align: center;
-        }
-
-        .table-wrapper {
-            overflow-x: auto;
-            max-height: 400px;
-            overflow-y: auto;
-        }
-
-        .summary-table {
-            width: 100%;
-            border-collapse: collapse;
-            font-size: 14px;
-        }
-
-        .summary-table th {
-            background: rgba(255, 255, 255, 0.2);
-            color: white;
-            font-weight: 600;
-            padding: 15px 12px;
-            text-align: center;
-            border-bottom: 2px solid rgba(255, 255, 255, 0.3);
-            position: sticky;
-            top: 0;
-            z-index: 10;
-        }
-
-        .summary-table th:first-child {
-            text-align: left;
-            min-width: 120px;
-        }
-
-        .summary-table th {
-            white-space: nowrap;
-            font-size: 13px;
-        }
-
-        .summary-table th.total-column {
-            background: rgba(0, 184, 148, 0.3);
-            font-weight: 700;
-        }
-
-        .summary-table td {
-            padding: 12px;
-            color: white;
-            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-            text-align: center;
-        }
-
-        .summary-table td:first-child {
-            text-align: left;
-            font-weight: 600;
-            background: rgba(255, 255, 255, 0.05);
-        }
-
-        .summary-table td.total-cell {
-            background: rgba(0, 184, 148, 0.2);
-            font-weight: 700;
-            color: #00b894;
-        }
-
-        .summary-table tbody tr:hover {
-            background: rgba(255, 255, 255, 0.1);
-        }
-
-        .summary-table tbody tr.low-score {
-            color: #ff4757 !important;
-        }
-
-        .summary-table tbody tr.low-score td {
-            color: #ff4757 !important;
-        }
-
-        .summary-table tbody tr.low-score td.total-cell {
-            color: #ff4757 !important;
-            background: rgba(255, 71, 87, 0.2);
-        }
-
-        .summary-table tfoot td {
-            background: rgba(0, 184, 148, 0.3);
-            color: white;
-            font-weight: 700;
-            border-top: 2px solid rgba(255, 255, 255, 0.3);
-            border-bottom: none;
-        }
-
-        .summary-table tfoot td:first-child {
-            background: rgba(0, 184, 148, 0.4);
-        }
-
-        .tab-menu {
-            display: flex;
-            background: rgba(255, 255, 255, 0.1);
-            border-radius: 12px;
-            padding: 6px;
-            margin-bottom: 25px;
-            backdrop-filter: blur(10px);
-            border: 1px solid rgba(255, 255, 255, 0.2);
-        }
-
-        .tab-button {
-            flex: 1;
-            padding: 12px 20px;
-            background: transparent;
-            border: none;
-            color: rgba(255, 255, 255, 0.7);
-            font-size: 16px;
-            font-weight: 600;
-            cursor: pointer;
-            border-radius: 8px;
-            transition: all 0.3s ease;
-        }
-
-        .tab-button:hover {
-            background: rgba(255, 255, 255, 0.1);
-            color: white;
-        }
-
-        .tab-button.active {
-            background: rgba(255, 255, 255, 0.2);
-            color: white;
-            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-        }
-
-        .tab-content {
-            display: none;
-        }
-
-        .tab-content.active {
-            display: block;
-        }
-
-        .ranking-container {
-            background: rgba(255, 255, 255, 0.1);
-            backdrop-filter: blur(15px);
-            border-radius: 16px;
-            border: 1px solid rgba(255, 255, 255, 0.2);
-            padding: 30px;
-            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
-        }
-
-        .ranking-main-title {
-            color: white;
-            font-size: 24px;
-            font-weight: 700;
-            text-align: center;
-            margin: 0 0 30px 0;
-            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
-        }
-
-        .ranking-grid {
-            display: grid;
-            grid-template-columns: repeat(2, 1fr);
-            gap: 20px;
-        }
-
-        .ranking-card {
-            background: rgba(255, 255, 255, 0.15);
-            border-radius: 16px;
-            padding: 25px;
-            text-align: center;
-            border: 1px solid rgba(255, 255, 255, 0.2);
-            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
-            transition: transform 0.3s ease;
-        }
-
-        .ranking-card:hover {
-            transform: translateY(-2px);
-        }
-
-        .ranking-title {
-            color: white;
-            font-weight: 700;
-            margin-bottom: 20px;
-            font-size: 18px;
-            text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
-        }
-
-        .ranking-item {
-            color: white;
-            font-size: 16px;
-            margin: 12px 0;
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            padding: 8px 12px;
-            background: rgba(255, 255, 255, 0.1);
-            border-radius: 8px;
-            font-weight: 500;
-        }
-
-        .ranking-item:first-of-type {
-            background: rgba(255, 215, 0, 0.2);
-            border: 1px solid rgba(255, 215, 0, 0.3);
-        }
-
-        .ranking-item:nth-of-type(2) {
-            background: rgba(192, 192, 192, 0.2);
-            border: 1px solid rgba(192, 192, 192, 0.3);
-        }
-
-        .ranking-item:nth-of-type(3) {
-            background: rgba(205, 127, 50, 0.2);
-            border: 1px solid rgba(205, 127, 50, 0.3);
-        }
-
-        /* Lottery Styles */
-        .lottery-controls {
-            display: flex;
-            gap: 10px;
-            margin-bottom: 20px;
-            flex-wrap: wrap;
-        }
-
-        .number-selection-section {
-            background: rgba(255, 255, 255, 0.1);
-            border-radius: 15px;
-            padding: 25px;
-            margin-bottom: 30px;
-            border: 1px solid rgba(255, 255, 255, 0.2);
-        }
-
-        .toggle-table-container {
-            text-align: center;
-            margin-bottom: 20px;
-        }
-
-        .toggle-table-button {
-            background: linear-gradient(45deg, #667eea, #764ba2);
-            border: none;
-            border-radius: 12px;
-            padding: 12px 24px;
-            color: white;
-            font-size: 16px;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            margin: 0 auto;
-            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
-        }
-
-        .toggle-table-button:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
-        }
-
-        .number-grid-container {
-            transition: all 0.3s ease;
-            overflow: hidden;
-        }
-
-        .number-grid-container.hidden {
-            max-height: 0;
-            padding: 0;
-            margin: 0;
-            opacity: 0;
-        }
-
-        .number-tab-menu {
-            display: flex;
-            background: rgba(255, 255, 255, 0.1);
-            border-radius: 10px;
-            padding: 4px;
-            margin: 15px 0;
-            backdrop-filter: blur(10px);
-            border: 1px solid rgba(255, 255, 255, 0.2);
-        }
-
-        .number-tab-button {
-            flex: 1;
-            padding: 10px 15px;
-            background: transparent;
-            border: none;
-            color: rgba(255, 255, 255, 0.7);
-            font-size: 14px;
-            font-weight: 600;
-            cursor: pointer;
-            border-radius: 6px;
-            transition: all 0.3s ease;
-        }
-
-        .number-tab-button:hover {
-            background: rgba(255, 255, 255, 0.1);
-            color: white;
-        }
-
-        .number-tab-button.active {
-            background: rgba(255, 255, 255, 0.2);
-            color: white;
-            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-        }
-
-        .number-tab-content {
-            display: none;
-        }
-
-        .number-tab-content.active {
-            display: block;
-        }
-
-        .number-grid {
-            display: grid;
-            grid-template-columns: repeat(11, 1fr);
-            gap: 8px;
-            margin-top: 15px;
-        }
-
-        .number-cell {
-            aspect-ratio: 1;
-            background: rgba(255, 255, 255, 0.15);
-            border: 2px solid rgba(255, 255, 255, 0.3);
-            border-radius: 10px;
-            color: white;
-            font-size: 16px;
-            font-weight: bold;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            min-height: 45px;
-        }
-
-        .number-cell:hover {
-            background: rgba(255, 255, 255, 0.25);
-            transform: scale(1.05);
-            box-shadow: 0 4px 15px rgba(255, 255, 255, 0.2);
-        }
-
-        .number-cell.selected {
-            background: linear-gradient(45deg, #00b894, #00a085);
-            border-color: #00b894;
-            box-shadow: 0 4px 15px rgba(0, 184, 148, 0.4);
-        }
-
-        .number-cell.taken {
-            background: rgba(255, 0, 0, 0.3);
-            border-color: rgba(255, 0, 0, 0.5);
-            cursor: not-allowed;
-            opacity: 0.6;
-        }
-
-        .number-cell.taken:hover {
-            transform: none;
-            box-shadow: none;
-        }
-
-        .lottery-button {
-            padding: 10px 20px;
-            border: none;
-            border-radius: 8px;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.3s ease;
-        }
-
-        .save-button {
-            background: #28a745;
-            color: white;
-        }
-
-        .save-button:hover {
-            background: #218838;
-        }
-
-        .new-sheet-button {
-            background: #007bff;
-            color: white;
-        }
-
-        .new-sheet-button:hover {
-            background: #0056b3;
-        }
-
-        .update-button {
-            background: #ffc107;
-            color: #212529;
-        }
-
-        .update-button:hover {
-            background: #e0a800;
-        }
-
-        .period-selector {
-            margin-bottom: 20px;
-        }
-
-        .period-selector select {
-            padding: 10px 15px;
-            border: 1px solid rgba(255, 255, 255, 0.3);
-            border-radius: 8px;
-            background: rgba(255, 255, 255, 0.1);
-            color: white;
-            font-size: 16px;
-            backdrop-filter: blur(10px);
-        }
-
-        .selected-number {
-            background: rgba(255, 255, 255, 0.2);
-            border-radius: 10px;
-            padding: 15px;
-            margin-bottom: 20px;
-            text-align: center;
-        }
-
-        .selected-number-text {
-            color: white;
-            font-size: 18px;
-            font-weight: 700;
-        }
-
-        .number-input-section {
-            background: rgba(255, 255, 255, 0.1);
-            border-radius: 15px;
-            padding: 25px;
-            margin-bottom: 30px;
-            border: 1px solid rgba(255, 255, 255, 0.2);
-        }
-
-        .selected-numbers-display {
-            background: rgba(255, 255, 255, 0.1);
-            border-radius: 15px;
-            padding: 25px;
-            margin-bottom: 30px;
-            border: 1px solid rgba(255, 255, 255, 0.2);
-        }
-
-        .selected-numbers-grid {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 10px;
-            min-height: 60px;
-            align-items: flex-start;
-            align-content: flex-start;
-        }
-
-        .selected-number-item {
-            background: linear-gradient(45deg, #00b894, #00a085);
-            color: white;
-            padding: 12px 16px;
-            border-radius: 10px;
-            font-size: 18px;
-            font-weight: bold;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            box-shadow: 0 4px 15px rgba(0, 184, 148, 0.3);
-            transition: all 0.3s ease;
-        }
-
-        .selected-number-item:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 6px 20px rgba(0, 184, 148, 0.4);
-        }
-
-        .remove-number {
-            background: rgba(255, 255, 255, 0.2);
-            border: none;
-            color: white;
-            width: 24px;
-            height: 24px;
-            border-radius: 50%;
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 16px;
-            font-weight: bold;
-            transition: all 0.3s ease;
-        }
-
-        .remove-number:hover {
-            background: rgba(255, 0, 0, 0.3);
-            transform: scale(1.1);
-        }
-
-        .no-numbers {
-            color: rgba(255, 255, 255, 0.6);
-            font-style: italic;
-            text-align: center;
-            width: 100%;
-            padding: 20px;
-        }
-
-        .navigator {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            margin-bottom: 20px;
-            flex-wrap: wrap;
-        }
-
-        .nav-button {
-            padding: 8px 12px;
-            background: rgba(255, 255, 255, 0.2);
-            border: 1px solid rgba(255, 255, 255, 0.3);
-            border-radius: 6px;
-            color: white;
-            cursor: pointer;
-            font-size: 14px;
-        }
-
-        .nav-button:hover {
-            background: rgba(255, 255, 255, 0.3);
-        }
-
-        .nav-button:disabled {
-            opacity: 0.5;
-            cursor: not-allowed;
-        }
-
-        .sheet-numbers {
-            display: flex;
-            gap: 5px;
-            flex-wrap: wrap;
-        }
-
-        .sheet-number {
-            padding: 6px 10px;
-            background: rgba(255, 255, 255, 0.2);
-            border: 1px solid rgba(255, 255, 255, 0.3);
-            border-radius: 6px;
-            color: white;
-            cursor: pointer;
-            font-size: 12px;
-        }
-
-        .sheet-number.active {
-            background: #007bff;
-            border-color: #007bff;
-        }
-
-        .sheet-number:hover {
-            background: rgba(255, 255, 255, 0.3);
-        }
-
-        .lottery-table-container {
-            background: rgba(255, 255, 255, 0.1);
-            backdrop-filter: blur(15px);
-            border-radius: 16px;
-            border: 1px solid rgba(255, 255, 255, 0.2);
-            margin-top: 30px;
-            overflow: hidden;
-        }
-
-        .lottery-table-wrapper {
-            max-height: 400px;
-            overflow-y: auto;
-        }
-
-        .search-container {
-            margin-bottom: 30px;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-
-        .search-input {
-            width: 120px;
-            padding: 12px 15px;
-            border: 1px solid rgba(255, 255, 255, 0.3);
-            border-radius: 10px;
-            background: rgba(255, 255, 255, 0.1);
-            color: white;
-            font-size: 16px;
-            backdrop-filter: blur(10px);
-        }
-
-        .search-button-small {
-            padding: 12px 20px;
-            background: linear-gradient(45deg, #00b894, #00a085);
-            border: none;
-            border-radius: 10px;
-            color: white;
-            font-size: 16px;
-            font-weight: 600;
-            cursor: pointer;
-            white-space: nowrap;
-        }
-
-        .search-button-small:hover {
-            transform: translateY(-1px);
-            box-shadow: 0 4px 15px rgba(0, 184, 148, 0.4);
-        }
-
-        @media (max-width: 768px) {
-            .glass-container {
-                margin: 10px;
-                padding: 20px;
-                border-radius: 15px;
-                margin-bottom: 100px;
-            }
-
-            .page-title {
-                font-size: 20px;
-                margin-bottom: 20px;
-            }
-
-            .menu-grid {
-                grid-template-columns: 1fr 1fr;
-                gap: 15px;
-                margin-top: 20px;
-            }
-
-            .menu-button {
-                padding: 25px 15px;
-                font-size: 16px;
-                border-radius: 12px;
-            }
-
-            .form-group {
-                margin-bottom: 15px;
-            }
-
-            .form-input {
-                padding: 15px;
-                font-size: 16px;
-                border-radius: 8px;
-            }
-
-            .section-title {
-                font-size: 16px;
-                margin: 20px 0 10px 0;
-            }
-
-            .score-row {
-                flex-direction: column;
-                gap: 8px;
-                margin-bottom: 15px;
-                background: rgba(255, 255, 255, 0.1);
-                padding: 15px;
-                border-radius: 10px;
-            }
-
-            .score-label {
-                font-size: 14px;
-                margin-bottom: 5px;
-                text-align: center;
-            }
-
-            .score-input {
-                width: 100%;
-                padding: 12px;
-                font-size: 16px;
-                border-radius: 8px;
-                text-align: center;
-            }
-
-            .total-score {
-                padding: 20px;
-                margin: 25px 0;
-            }
-
-            .total-score-text {
-                font-size: 20px;
-            }
-
-            .submit-button {
-                padding: 18px;
-                font-size: 18px;
-                border-radius: 10px;
-            }
-
-            .date-inputs {
-                grid-template-columns: 1fr;
-                gap: 15px;
-            }
-
-            .search-button {
-                padding: 15px;
-                font-size: 18px;
-            }
-
-            .summary-table {
-                font-size: 10px;
-            }
-            
-            .summary-table th,
-            .summary-table td {
-                padding: 6px 3px;
-            }
-            
-            .summary-table th:first-child {
-                min-width: 80px;
-            }
-
-            .summary-table th {
-                font-size: 10px;
-            }
-
-            .tab-button {
-                font-size: 14px;
-                padding: 12px 10px;
-            }
-
-            .ranking-grid {
-                grid-template-columns: 1fr;
-                gap: 15px;
-            }
-
-            .ranking-card {
-                padding: 20px;
-            }
-
-            .ranking-main-title {
-                font-size: 18px;
-            }
-
-            .ranking-item {
-                font-size: 14px;
-                padding: 10px;
-            }
-
-            .number-selection-section {
-                padding: 20px;
-                margin-bottom: 25px;
-            }
-
-            .number-tab-button {
-                font-size: 12px;
-                padding: 8px 10px;
-            }
-
-            .number-grid {
-                grid-template-columns: repeat(11, 1fr);
-                gap: 6px;
-            }
-
-            .number-cell {
-                font-size: 14px;
-                min-height: 40px;
-            }
-
-            .toggle-table-button {
-                padding: 15px 20px;
-                font-size: 16px;
-            }
-
-            .selected-numbers-display {
-                padding: 20px;
-                margin-bottom: 25px;
-            }
-
-            .selected-number-item {
-                font-size: 16px;
-                padding: 10px 14px;
-            }
-
-            .selected-numbers-grid {
-                gap: 8px;
-            }
-
-            .lottery-controls {
-                flex-direction: column;
-                gap: 10px;
-            }
-
-            .lottery-button {
-                padding: 15px 20px;
-                font-size: 16px;
-                border-radius: 8px;
-            }
-
-            .navigator {
-                flex-direction: column;
-                align-items: flex-start;
-                gap: 15px;
-            }
-
-            .nav-button {
-                padding: 12px 16px;
-                font-size: 16px;
-            }
-
-            .sheet-numbers {
-                width: 100%;
-                justify-content: flex-start;
-            }
-
-            .sheet-number {
-                padding: 10px 15px;
-                font-size: 14px;
-            }
-
-            .selected-number {
-                padding: 20px;
-                margin-bottom: 25px;
-            }
-
-            .selected-number-text {
-                font-size: 16px;
-            }
-
-            .search-container {
-                flex-direction: column;
-                gap: 15px;
-                align-items: stretch;
-            }
-
-            .search-input {
-                width: 100%;
-                padding: 15px;
-                font-size: 18px;
-                text-align: center;
-            }
-
-            .search-button-small {
-                padding: 15px 20px;
-                font-size: 18px;
-                width: 100%;
-            }
-
-            .logo {
-                width: 120px;
-                margin-bottom: 15px;
-            }
-
-            .logo-top-right {
-                width: 60px;
-                top: 15px;
-                right: 15px;
-            }
-
-            .back-button {
-                padding: 12px 20px;
-                font-size: 16px;
-                margin-bottom: 15px;
-            }
-
-            .table-wrapper {
-                max-height: 300px;
-            }
-
-            .lottery-table-wrapper {
-                max-height: 250px;
-            }
-
-            .period-selector select {
-                padding: 15px;
-                font-size: 16px;
-                width: 100%;
-            }
-
-            .toast {
-                top: 10px;
-                right: 10px;
-                left: 10px;
-                transform: translateY(-100%);
-                font-size: 16px;
-                padding: 18px;
-            }
-
-            .toast.show {
-                transform: translateY(0);
-            }
-        }
-
-        @media (max-width: 480px) {
-            .glass-container {
-                margin: 5px;
-                padding: 15px;
-                margin-bottom: 120px;
-            }
-
-            .menu-button {
-                padding: 20px 10px;
-                font-size: 14px;
-            }
-
-            .page-title {
-                font-size: 18px;
-            }
-
-            .number-selection-section {
-                padding: 15px;
-                margin-bottom: 20px;
-            }
-
-            .number-grid {
-                gap: 4px;
-            }
-
-            .number-cell {
-                font-size: 12px;
-                min-height: 35px;
-            }
-
-            .selected-numbers-display {
-                padding: 15px;
-                margin-bottom: 20px;
-            }
-
-            .selected-number-item {
-                font-size: 14px;
-                padding: 8px 12px;
-            }
-
-            .summary-table {
-                font-size: 9px;
-            }
-
-            .summary-table th,
-            .summary-table td {
-                padding: 4px 2px;
-            }
-
-            .tab-button {
-                font-size: 12px;
-                padding: 10px 8px;
-            }
-
-            .ranking-item {
-                font-size: 12px;
-                padding: 8px;
-            }
-        }
-    </style>
-  <style>@view-transition { navigation: auto; }</style>
-  <script src="https://cdn.tailwindcss.com" type="text/javascript"></script>
- </head>
- <body>
-  <div id="homePage" class="page active">
-   <div class="glass-container"><img src="https://img2.pic.in.th/pic/Online-Club-54.png" alt="Online Club Logo" class="logo" onerror="this.style.display='none'; this.alt='Logo failed to load';">
-    <div class="menu-grid"><button class="menu-button" onclick="showPage('scorePage')"> 📊<br>
-      ส่งคะแนน </button> <button class="menu-button" onclick="showPage('summaryPage')"> 📈<br>
-      สรุปคะแนน </button> <button class="menu-button" onclick="showPage('lotteryPage')"> 🎲<br>
-      เลือกเลข </button> <button class="menu-button" onclick="showPage('winnerSearchPage')"> 🏆<br>
-      ค้นหาคนถูกรางวัล </button>
-    </div>
-   </div>
-  </div>
-  <div id="scorePage" class="page">
-   <div class="glass-container page-container"><img src="https://img2.pic.in.th/pic/Online-Club-54.png" alt="Online Club Logo" class="logo-top-right" onerror="this.style.display='none'; this.alt='Logo failed to load';"> <button class="back-button" onclick="showPage('homePage')">← กลับหน้าหลัก</button>
-    <h2 class="page-title">ส่งคะแนน</h2>
-    <form id="scoreForm">
-     <div class="form-group"><label class="form-label" for="memberName">ชื่อคนส่งคะแนน</label> <input type="text" id="memberName" class="form-input" placeholder="กรอกชื่อสมาชิก" required>
-     </div>
-     <div class="section-title">
-      1. ปิดเคส (10 คะแนน/ครั้ง)
-     </div>
-     <div class="form-group"><input type="number" id="closeCaseCount" class="form-input" placeholder="จำนวนครั้ง" min="0" value="0">
-     </div>
-     <div class="section-title">
-      2. ไลฟ์สด
-     </div>
-     <div class="score-row"><span class="score-label">1 ชม. (4 คะแนน)</span> <input type="number" id="live1h" class="score-input" min="0" value="0"> <span class="score-label">1.30 ชม. (6 คะแนน)</span> <input type="number" id="live1h30" class="score-input" min="0" value="0">
-     </div>
-     <div class="score-row"><span class="score-label">2 ชม. (8 คะแนน)</span> <input type="number" id="live2h" class="score-input" min="0" value="0"> <span class="score-label">2.30 ชม. (10 คะแนน)</span> <input type="number" id="live2h30" class="score-input" min="0" value="0">
-     </div>
-     <div class="score-row"><span class="score-label">3 ชม. (12 คะแนน)</span> <input type="number" id="live3h" class="score-input" min="0" value="0">
-     </div>
-     <div class="section-title">
-      3. คอนเท้น
-     </div>
-     <div class="score-row"><span class="score-label">รูปภาพ+คลิปตัดต่อจากไลฟ์สด (2 คะแนน)</span> <input type="number" id="contentImage" class="score-input" min="0" value="0">
-     </div>
-     <div class="score-row"><span class="score-label">คลิปตัดต่อ (3 คะแนน)</span> <input type="number" id="contentVideo" class="score-input" min="0" value="0">
-     </div>
-     <div class="section-title">
-      4. จำนวนแชท (1 คะแนน/ครั้ง)
-     </div>
-     <div class="form-group"><input type="number" id="chatCount" class="form-input" placeholder="จำนวนแชท" min="0" value="0">
-     </div>
-     <div class="total-score">
-      <div class="total-score-text">
-       รวมคะแนนทั้งหมด: <span id="totalScore">0</span> คะแนน
-      </div>
-     </div><button type="submit" class="submit-button" id="submitButton"> <span id="submitButtonText">ส่งข้อมูลทั้งหมด</span> </button>
-    </form>
-   </div>
-  </div>
-  <div id="summaryPage" class="page">
-   <div class="glass-container page-container"><img src="https://img2.pic.in.th/pic/Online-Club-54.png" alt="Online Club Logo" class="logo-top-right" onerror="this.style.display='none'; this.alt='Logo failed to load';"> <button class="back-button" onclick="showPage('homePage')">← กลับหน้าหลัก</button>
-    <h2 class="page-title">สรุปคะแนน</h2>
-    <div class="date-inputs">
-     <div class="form-group"><label class="form-label">วันที่เริ่มต้น</label> <input type="date" id="startDate" class="form-input">
-     </div>
-     <div class="form-group"><label class="form-label">วันที่สิ้นสุด</label> <input type="date" id="endDate" class="form-input">
-     </div>
-    </div><button class="search-button" id="searchButton" onclick="searchData()"> <span id="searchButtonText">ค้นหาข้อมูล</span> </button>
-    <div id="resultsContainer" style="display: none;">
-     <div class="tab-menu"><button class="tab-button active" onclick="switchTab('summary')">📊 สรุปคะแนน</button> <button class="tab-button" onclick="switchTab('ranking')">🏆 จัดอันดับ</button>
-     </div>
-     <div id="summaryTab" class="tab-content active">
-      <div class="summary-table-container">
-       <div class="table-header">
-        <h3 class="table-title">📊 ตารางสรุปคะแนนรวม</h3>
-       </div>
-       <div class="table-wrapper">
-        <table class="summary-table" id="summaryTable">
-         <thead>
-          <tr>
-           <th>ชื่อสมาชิก</th>
-           <th>ปิดเคส</th>
-           <th>ไลฟ์สด</th>
-           <th>คอนเท้น</th>
-           <th>จำนวนแชท</th>
-           <th class="total-column">รวม</th>
-          </tr>
-         </thead>
-         <tbody id="summaryTableBody">
-         </tbody>
-         <tfoot id="summaryTableFooter">
-         </tfoot>
-        </table>
-       </div>
-      </div>
-     </div>
-     <div id="rankingTab" class="tab-content">
-      <div class="ranking-container">
-       <h3 class="ranking-main-title">🏆 จัดอันดับสมาชิก Top 3</h3>
-       <div class="ranking-grid" id="rankingGrid"></div>
-      </div>
-     </div>
-    </div>
-   </div>
-  </div>
-  <div id="lotteryPage" class="page">
-   <div class="glass-container page-container"><img src="https://img2.pic.in.th/pic/Online-Club-54.png" alt="Online Club Logo" class="logo-top-right" onerror="this.style.display='none'; this.alt='Logo failed to load';"> <button class="back-button" onclick="showPage('homePage')">← กลับหน้าหลัก</button>
-    <h2 class="page-title">เลือกเลขที่ชอบ ลุ้นหวยเลขท้าย</h2>
-    <div class="form-group"><label class="form-label" for="playerName">ชื่อผู้เล่น</label> <input type="text" id="playerName" class="form-input" placeholder="กรอกชื่อของคุณ" required>
-    </div>
-    <div class="period-selector"><label class="form-label">ประจำงวดวันที่</label> <select id="periodSelect" class="form-input"> <option value="1">วันที่ 1</option> <option value="16">วันที่ 16</option> </select>
-    </div>
-    <div class="navigator"><button class="nav-button" id="prevSheet" onclick="navigateSheet(-1)">← ก่อนหน้า</button> <span style="color: white; font-weight: 600;">ใบที่ <span id="currentSheetDisplay">1</span></span> <button class="nav-button" id="nextSheet" onclick="navigateSheet(1)">ถัดไป →</button>
-     <div class="sheet-numbers" id="sheetNumbers"></div>
-    </div>
-    <div class="lottery-controls"><button class="lottery-button save-button" onclick="saveLotteryData()">บันทึกข้อมูล</button> <button class="lottery-button new-sheet-button" onclick="createNewSheet()">เพิ่มใบใหม่</button> <button class="lottery-button update-button" onclick="updateLotteryData()">อัพเดทข้อมูล</button>
-    </div>
-    <div class="number-selection-section">
-     <div class="toggle-table-container"><button class="toggle-table-button" onclick="toggleNumberTable()"> <span id="toggleIcon">👁️</span> <span id="toggleText">ซ่อนตาราง</span> </button>
-     </div>
-     <div class="number-grid-container" id="numberGridContainer">
-      <div class="section-title">
-       เลือกเลขจากตาราง (00-99)
-      </div>
-      <div class="number-tab-menu"><button class="number-tab-button active" onclick="switchNumberTab('range1')">00-32</button> <button class="number-tab-button" onclick="switchNumberTab('range2')">33-65</button> <button class="number-tab-button" onclick="switchNumberTab('range3')">66-99</button>
-      </div>
-      <div id="range1" class="number-tab-content active">
-       <div class="number-grid" id="numberGrid1"></div>
-      </div>
-      <div id="range2" class="number-tab-content">
-       <div class="number-grid" id="numberGrid2"></div>
-      </div>
-      <div id="range3" class="number-tab-content">
-       <div class="number-grid" id="numberGrid3"></div>
-      </div>
-     </div>
-    </div>
-    <div class="selected-numbers-display">
-     <div class="section-title">
-      เลขที่เลือกแล้ว
-     </div>
-     <div class="selected-numbers-grid" id="selectedNumbersGrid">
-      <div class="no-numbers">
-       ยังไม่ได้เลือกเลข
-      </div>
-     </div>
-    </div>
-    <div class="lottery-table-container">
-     <div class="table-header">
-      <h3 class="table-title">📋 รายการเลขที่เลือก</h3>
-     </div>
-     <div class="lottery-table-wrapper">
-      <table class="summary-table" id="lotteryTable">
-       <thead>
-        <tr>
-         <th>ชื่อ</th>
-         <th>เลขที่เลือก</th>
-         <th>งวดวันที่</th>
-         <th>ใบที่</th>
-        </tr>
-       </thead>
-       <tbody id="lotteryTableBody">
-       </tbody>
-      </table>
-     </div>
-    </div>
-   </div>
-  </div>
-  <div id="winnerSearchPage" class="page">
-   <div class="glass-container page-container"><img src="https://img2.pic.in.th/pic/Online-Club-54.png" alt="Online Club Logo" class="logo-top-right" onerror="this.style.display='none'; this.alt='Logo failed to load';"> <button class="back-button" onclick="showPage('homePage')">← กลับหน้าหลัก</button>
-    <h2 class="page-title">ค้นหาคนถูกรางวัล</h2>
-    <div class="search-container"><label class="form-label">กรอกเลข 2 หลัก (00-99)</label> <input type="text" id="winnerSearchInput" class="search-input" placeholder="เช่น 25" maxlength="2"> <button class="search-button-small" onclick="searchWinner()">ค้นหา</button>
-    </div>
-    <div id="winnerResults" style="display: none;">
-     <div class="summary-table-container">
-      <div class="table-header">
-       <h3 class="table-title">🏆 ผลการค้นหา</h3>
-      </div>
-      <div class="table-wrapper">
-       <table class="summary-table" id="winnerTable">
-        <thead>
-         <tr>
-          <th>ชื่อ</th>
-          <th>เลขที่ตรง</th>
-          <th>งวดวันที่</th>
-          <th>ใบที่</th>
-         </tr>
-        </thead>
-        <tbody id="winnerTableBody">
-        </tbody>
-       </table>
-      </div>
-     </div>
-    </div>
-   </div>
-  </div>
-  <script>
-        let allData = [];
-        let lotteryData = [];
-        let currentRecordCount = 0;
-        let currentSheet = 1;
-        let maxSheet = 1;
-        let selectedNumbers = new Set();
-        let takenNumbers = new Set();
-        let sheetData = {};
-
-        const defaultConfig = {
-            app_title: "Online Club",
-            submit_button_text: "ส่งข้อมูลทั้งหมด",
-            search_button_text: "ค้นหาข้อมูล"
-        };
-
-        const dataHandler = {
-            onDataChanged(data) {
-                allData = data.filter(record => record.member_name);
-                lotteryData = data.filter(record => record.player_name);
-                currentRecordCount = data.length;
-                updateLotteryDisplay();
-            }
-        };
-
-        async function initializeApp() {
-            if (window.dataSdk) {
-                const initResult = await window.dataSdk.init(dataHandler);
-                if (!initResult.isOk) {
-                    showToast("ไม่สามารถเชื่อมต่อฐานข้อมูลได้", "error");
-                }
-            }
-
-            if (window.elementSdk) {
-                await window.elementSdk.init({
-                    defaultConfig,
-                    render: async (config) => {
-                        const titleElements = document.querySelectorAll('#appTitle');
-                        titleElements.forEach(el => {
-                            if (el) el.textContent = config.app_title || defaultConfig.app_title;
-                        });
-                        
-                        const submitButtonText = document.getElementById('submitButtonText');
-                        if (submitButtonText) {
-                            submitButtonText.textContent = config.submit_button_text || defaultConfig.submit_button_text;
-                        }
-                        
-                        const searchButtonText = document.getElementById('searchButtonText');
-                        if (searchButtonText) {
-                            searchButtonText.textContent = config.search_button_text || defaultConfig.search_button_text;
-                        }
-                    },
-                    mapToCapabilities: (config) => ({
-                        recolorables: [],
-                        borderables: [],
-                        fontEditable: undefined,
-                        fontSizeable: undefined
-                    }),
-                    mapToEditPanelValues: (config) => new Map([
-                        ["app_title", config.app_title || defaultConfig.app_title],
-                        ["submit_button_text", config.submit_button_text || defaultConfig.submit_button_text],
-                        ["search_button_text", config.search_button_text || defaultConfig.search_button_text]
-                    ])
-                });
-            }
-
-            setupEventListeners();
-            setDefaultDates();
-            initializeLottery();
-        }
-
-        function setupEventListeners() {
-            const scoreInputs = ['closeCaseCount', 'live1h', 'live1h30', 'live2h', 'live2h30', 'live3h', 'contentImage', 'contentVideo', 'chatCount'];
-            scoreInputs.forEach(id => {
-                const element = document.getElementById(id);
-                if (element) {
-                    element.addEventListener('input', calculateTotal);
-                }
-            });
-
-            const scoreForm = document.getElementById('scoreForm');
-            if (scoreForm) {
-                scoreForm.addEventListener('submit', handleSubmit);
-            }
-        }
-
-        function calculateTotal() {
-            const closeCaseCount = parseInt(document.getElementById('closeCaseCount').value) || 0;
-            const live1h = parseInt(document.getElementById('live1h').value) || 0;
-            const live1h30 = parseInt(document.getElementById('live1h30').value) || 0;
-            const live2h = parseInt(document.getElementById('live2h').value) || 0;
-            const live2h30 = parseInt(document.getElementById('live2h30').value) || 0;
-            const live3h = parseInt(document.getElementById('live3h').value) || 0;
-            const contentImage = parseInt(document.getElementById('contentImage').value) || 0;
-            const contentVideo = parseInt(document.getElementById('contentVideo').value) || 0;
-            const chatCount = parseInt(document.getElementById('chatCount').value) || 0;
-
-            const closeCaseScore = closeCaseCount * 10;
-            const liveScore = (live1h * 4) + (live1h30 * 6) + (live2h * 8) + (live2h30 * 10) + (live3h * 12);
-            const contentScore = (contentImage * 2) + (contentVideo * 3);
-            const chatScore = chatCount * 1;
-
-            const total = closeCaseScore + liveScore + contentScore + chatScore;
-            const totalElement = document.getElementById('totalScore');
-            if (totalElement) {
-                totalElement.textContent = total;
-            }
-        }
-
-        async function handleSubmit(e) {
-            e.preventDefault();
-            
-            if (currentRecordCount >= 999) {
-                showToast("ถึงขีดจำกัดการเก็บข้อมูล 999 รายการแล้ว กรุณาลบข้อมูลเก่าก่อน", "error");
-                return;
-            }
-
-            const submitButton = document.getElementById('submitButton');
-            const originalText = submitButton.innerHTML;
-            submitButton.innerHTML = '<span class="loading"></span>กำลังบันทึก...';
-            submitButton.disabled = true;
-
-            const memberName = document.getElementById('memberName').value.trim();
-            if (!memberName) {
-                showToast("กรุณากรอกชื่อสมาชิก", "error");
-                submitButton.innerHTML = originalText;
-                submitButton.disabled = false;
-                return;
-            }
-
-            const closeCaseCount = parseInt(document.getElementById('closeCaseCount').value) || 0;
-            const live1h = parseInt(document.getElementById('live1h').value) || 0;
-            const live1h30 = parseInt(document.getElementById('live1h30').value) || 0;
-            const live2h = parseInt(document.getElementById('live2h').value) || 0;
-            const live2h30 = parseInt(document.getElementById('live2h30').value) || 0;
-            const live3h = parseInt(document.getElementById('live3h').value) || 0;
-            const contentImage = parseInt(document.getElementById('contentImage').value) || 0;
-            const contentVideo = parseInt(document.getElementById('contentVideo').value) || 0;
-            const chatCount = parseInt(document.getElementById('chatCount').value) || 0;
-
-            const closeCaseScore = closeCaseCount * 10;
-            const liveScore = (live1h * 4) + (live1h30 * 6) + (live2h * 8) + (live2h30 * 10) + (live3h * 12);
-            const contentScore = (contentImage * 2) + (contentVideo * 3);
-            const chatScore = chatCount * 1;
-            const totalScore = closeCaseScore + liveScore + contentScore + chatScore;
-
-            const scoreData = {
-                member_name: memberName,
-                close_case_count: closeCaseCount,
-                close_case_score: closeCaseScore,
-                live_1h_count: live1h,
-                live_1h30_count: live1h30,
-                live_2h_count: live2h,
-                live_2h30_count: live2h30,
-                live_3h_count: live3h,
-                live_total_score: liveScore,
-                content_image_count: contentImage,
-                content_video_count: contentVideo,
-                content_total_score: contentScore,
-                chat_count: chatCount,
-                chat_score: chatScore,
-                total_score: totalScore,
-                created_date: new Date().toISOString()
-            };
-
-            if (window.dataSdk) {
-                const result = await window.dataSdk.create(scoreData);
-                if (result.isOk) {
-                    showToast("บันทึกข้อมูลสำเร็จ!", "success");
-                    document.getElementById('scoreForm').reset();
-                    calculateTotal();
-                } else {
-                    showToast("เกิดข้อผิดพลาดในการบันทึกข้อมูล", "error");
-                }
-            }
-
-            submitButton.innerHTML = originalText;
-            submitButton.disabled = false;
-        }
-
-        function setDefaultDates() {
-            const today = new Date();
-            const firstDay = new Date(today.getFullYear(), today.getMonth(), 1);
-            
-            const startDateElement = document.getElementById('startDate');
-            const endDateElement = document.getElementById('endDate');
-            
-            if (startDateElement) {
-                startDateElement.value = firstDay.toISOString().split('T')[0];
-            }
-            if (endDateElement) {
-                endDateElement.value = today.toISOString().split('T')[0];
-            }
-        }
-
-        async function searchData() {
-            const searchButton = document.getElementById('searchButton');
-            const originalText = searchButton.innerHTML;
-            searchButton.innerHTML = '<span class="loading"></span>กำลังค้นหา...';
-            searchButton.disabled = true;
-
-            const startDate = document.getElementById('startDate').value;
-            const endDate = document.getElementById('endDate').value;
-
-            if (!startDate || !endDate) {
-                showToast("กรุณาเลือกวันที่เริ่มต้นและสิ้นสุด", "error");
-                searchButton.innerHTML = originalText;
-                searchButton.disabled = false;
-                return;
-            }
-
-            const filteredData = allData.filter(record => {
-                const recordDate = new Date(record.created_date).toISOString().split('T')[0];
-                return recordDate >= startDate && recordDate <= endDate;
-            });
-
-            displayResults(filteredData);
-            document.getElementById('resultsContainer').style.display = 'block';
-
-            searchButton.innerHTML = originalText;
-            searchButton.disabled = false;
-        }
-
-        function displayResults(data) {
-            const memberScores = {};
-
-            data.forEach(record => {
-                const name = record.member_name;
-                if (!memberScores[name]) {
-                    memberScores[name] = {
-                        close_case_score: 0,
-                        live_total_score: 0,
-                        content_total_score: 0,
-                        chat_score: 0,
-                        total_score: 0
-                    };
-                }
-                memberScores[name].close_case_score += record.close_case_score || 0;
-                memberScores[name].live_total_score += record.live_total_score || 0;
-                memberScores[name].content_total_score += record.content_total_score || 0;
-                memberScores[name].chat_score += record.chat_score || 0;
-                memberScores[name].total_score += record.total_score || 0;
-            });
-
-            displaySummaryTable(memberScores);
-            displayRankings(memberScores);
-        }
-
-        function displaySummaryTable(memberScores) {
-            const tableBody = document.getElementById('summaryTableBody');
-            const tableFooter = document.getElementById('summaryTableFooter');
-            
-            if (!tableBody || !tableFooter) return;
-            
-            tableBody.innerHTML = '';
-            tableFooter.innerHTML = '';
-
-            const sortedMembers = Object.entries(memberScores)
-                .sort((a, b) => b[1].total_score - a[1].total_score);
-
-            const totals = {
-                close_case_score: 0,
-                live_total_score: 0,
-                content_total_score: 0,
-                chat_score: 0,
-                total_score: 0
-            };
-
-            sortedMembers.forEach(([name, scores]) => {
-                const row = document.createElement('tr');
-                
-                if (scores.total_score < 25) {
-                    row.classList.add('low-score');
-                }
-                
-                row.innerHTML = `
-                    <td>${name}</td>
-                    <td>${scores.close_case_score}</td>
-                    <td>${scores.live_total_score}</td>
-                    <td>${scores.content_total_score}</td>
-                    <td>${scores.chat_score}</td>
-                    <td class="total-cell">${scores.total_score}</td>
-                `;
-                tableBody.appendChild(row);
-
-                totals.close_case_score += scores.close_case_score;
-                totals.live_total_score += scores.live_total_score;
-                totals.content_total_score += scores.content_total_score;
-                totals.chat_score += scores.chat_score;
-                totals.total_score += scores.total_score;
-            });
-
-            const footerRow = document.createElement('tr');
-            footerRow.innerHTML = `
-                <td>รวมทั้งหมด</td>
-                <td>${totals.close_case_score}</td>
-                <td>${totals.live_total_score}</td>
-                <td>${totals.content_total_score}</td>
-                <td>${totals.chat_score}</td>
-                <td>${totals.total_score}</td>
-            `;
-            tableFooter.appendChild(footerRow);
-        }
-
-        function displayRankings(memberScores) {
-            const categories = [
-                { key: 'close_case_score', title: 'ปิดเคส' },
-                { key: 'live_total_score', title: 'ไลฟ์สด' },
-                { key: 'content_total_score', title: 'คอนเท้น' },
-                { key: 'chat_score', title: 'จำนวนแชท' }
-            ];
-
-            const rankingGrid = document.getElementById('rankingGrid');
-            if (!rankingGrid) return;
-            
-            rankingGrid.innerHTML = '';
-
-            categories.forEach(category => {
-                const sorted = Object.entries(memberScores)
-                    .sort((a, b) => b[1][category.key] - a[1][category.key])
-                    .slice(0, 3);
-
-                const card = document.createElement('div');
-                card.className = 'ranking-card';
-                
-                let content = `<div class="ranking-title">${category.title}</div>`;
-                sorted.forEach((item, index) => {
-                    const medals = ['🥇', '🥈', '🥉'];
-                    content += `<div class="ranking-item">
-                        <span>${medals[index]} ${item[0]}</span>
-                        <span>${item[1][category.key]} คะแนน</span>
-                    </div>`;
-                });
-
-                card.innerHTML = content;
-                rankingGrid.appendChild(card);
-            });
-        }
-
-        function switchTab(tabName) {
-            document.querySelectorAll('.tab-button').forEach(button => {
-                button.classList.remove('active');
-            });
-
-            document.querySelectorAll('.tab-content').forEach(content => {
-                content.classList.remove('active');
-            });
-
-            event.target.classList.add('active');
-
-            if (tabName === 'summary') {
-                document.getElementById('summaryTab').classList.add('active');
-            } else if (tabName === 'ranking') {
-                document.getElementById('rankingTab').classList.add('active');
-            }
-        }
-
-        // Lottery Functions
-        let isTableVisible = true;
-
-        function initializeLottery() {
-            updateSheetNavigator();
-            updateLotteryDisplay();
-            createNumberGrid();
-        }
-
-        function createNumberGrid() {
-            // Create grid for range 1 (00-32)
-            const grid1 = document.getElementById('numberGrid1');
-            if (grid1) {
-                grid1.innerHTML = '';
-                for (let i = 0; i <= 32; i++) {
-                    const number = i.toString().padStart(2, '0');
-                    const cell = document.createElement('div');
-                    cell.className = 'number-cell';
-                    cell.textContent = number;
-                    cell.onclick = () => selectNumber(number);
-                    cell.dataset.number = number;
-                    grid1.appendChild(cell);
-                }
-            }
-            
-            // Create grid for range 2 (33-65)
-            const grid2 = document.getElementById('numberGrid2');
-            if (grid2) {
-                grid2.innerHTML = '';
-                for (let i = 33; i <= 65; i++) {
-                    const number = i.toString().padStart(2, '0');
-                    const cell = document.createElement('div');
-                    cell.className = 'number-cell';
-                    cell.textContent = number;
-                    cell.onclick = () => selectNumber(number);
-                    cell.dataset.number = number;
-                    grid2.appendChild(cell);
-                }
-            }
-            
-            // Create grid for range 3 (66-99)
-            const grid3 = document.getElementById('numberGrid3');
-            if (grid3) {
-                grid3.innerHTML = '';
-                for (let i = 66; i <= 99; i++) {
-                    const number = i.toString().padStart(2, '0');
-                    const cell = document.createElement('div');
-                    cell.className = 'number-cell';
-                    cell.textContent = number;
-                    cell.onclick = () => selectNumber(number);
-                    cell.dataset.number = number;
-                    grid3.appendChild(cell);
-                }
-            }
-            
-            updateNumberGrid();
-        }
-
-        function selectNumber(number) {
-            const period = document.getElementById('periodSelect').value;
-            const key = `${period}-${currentSheet}`;
-            
-            if (takenNumbers.has(`${number}-${key}`)) {
-                showToast("เลขนี้ถูกเลือกแล้วโดยคนอื่น", "error");
-                return;
-            }
-
-            if (!sheetData[key]) {
-                sheetData[key] = new Set();
-            }
-
-            if (sheetData[key].has(number)) {
-                sheetData[key].delete(number);
-                showToast(`ยกเลิกเลข ${number}`, "success");
-            } else {
-                sheetData[key].add(number);
-                showToast(`เลือกเลข ${number} สำเร็จ`, "success");
-            }
-            
-            updateNumberGrid();
-            updateSelectedDisplay();
-        }
-
-        function updateNumberGrid() {
-            const period = document.getElementById('periodSelect').value;
-            const key = `${period}-${currentSheet}`;
-            const selected = sheetData[key] ? Array.from(sheetData[key]) : [];
-            
-            // Update all number grids
-            ['numberGrid1', 'numberGrid2', 'numberGrid3'].forEach(gridId => {
-                const grid = document.getElementById(gridId);
-                if (grid) {
-                    grid.querySelectorAll('.number-cell').forEach(cell => {
-                        const number = cell.dataset.number;
-                        const takenKey = `${number}-${key}`;
-                        
-                        cell.classList.remove('selected', 'taken');
-                        
-                        if (takenNumbers.has(takenKey)) {
-                            cell.classList.add('taken');
-                        } else if (selected.includes(number)) {
-                            cell.classList.add('selected');
-                        }
-                    });
-                }
-            });
-        }
-
-        function switchNumberTab(tabName) {
-            // Remove active class from all tab buttons
-            document.querySelectorAll('.number-tab-button').forEach(button => {
-                button.classList.remove('active');
-            });
-
-            // Remove active class from all tab contents
-            document.querySelectorAll('.number-tab-content').forEach(content => {
-                content.classList.remove('active');
-            });
-
-            // Add active class to clicked button
-            event.target.classList.add('active');
-
-            // Show corresponding tab content
-            document.getElementById(tabName).classList.add('active');
-        }
-
-        function toggleNumberTable() {
-            const container = document.getElementById('numberGridContainer');
-            const icon = document.getElementById('toggleIcon');
-            const text = document.getElementById('toggleText');
-            
-            isTableVisible = !isTableVisible;
-            
-            if (isTableVisible) {
-                container.classList.remove('hidden');
-                icon.textContent = '👁️';
-                text.textContent = 'ซ่อนตาราง';
-            } else {
-                container.classList.add('hidden');
-                icon.textContent = '🙈';
-                text.textContent = 'แสดงตาราง';
-            }
-        }
-
-        function removeSelectedNumber(number) {
-            const period = document.getElementById('periodSelect').value;
-            const key = `${period}-${currentSheet}`;
-            
-            if (sheetData[key]) {
-                sheetData[key].delete(number);
-                updateSelectedDisplay();
-                showToast(`ลบเลข ${number} แล้ว`, "success");
-            }
-        }
-
-        function updateSelectedDisplay() {
-            const period = document.getElementById('periodSelect').value;
-            const key = `${period}-${currentSheet}`;
-            const selected = sheetData[key] ? Array.from(sheetData[key]).sort() : [];
-            
-            const grid = document.getElementById('selectedNumbersGrid');
-            if (!grid) return;
-            
-            grid.innerHTML = '';
-            
-            if (selected.length === 0) {
-                const noNumbers = document.createElement('div');
-                noNumbers.className = 'no-numbers';
-                noNumbers.textContent = 'ยังไม่ได้เลือกเลข';
-                grid.appendChild(noNumbers);
-            } else {
-                selected.forEach(number => {
-                    const item = document.createElement('div');
-                    item.className = 'selected-number-item';
-                    item.innerHTML = `
-                        <span>${number}</span>
-                        <button class="remove-number" onclick="removeSelectedNumber('${number}')" title="ลบเลขนี้">×</button>
-                    `;
-                    grid.appendChild(item);
-                });
-            }
-        }
-
-        function updateSheetNavigator() {
-            const sheetNumbers = document.getElementById('sheetNumbers');
-            const currentDisplay = document.getElementById('currentSheetDisplay');
-            const prevButton = document.getElementById('prevSheet');
-            const nextButton = document.getElementById('nextSheet');
-            
-            if (currentDisplay) {
-                currentDisplay.textContent = currentSheet;
-            }
-            
-            if (prevButton) {
-                prevButton.disabled = currentSheet <= 1;
-            }
-            
-            if (nextButton) {
-                nextButton.disabled = currentSheet >= maxSheet;
-            }
-            
-            if (sheetNumbers) {
-                sheetNumbers.innerHTML = '';
-                for (let i = 1; i <= maxSheet; i++) {
-                    const button = document.createElement('button');
-                    button.className = `sheet-number ${i === currentSheet ? 'active' : ''}`;
-                    button.textContent = i;
-                    button.onclick = () => goToSheet(i);
-                    sheetNumbers.appendChild(button);
-                }
-            }
-        }
-
-        function navigateSheet(direction) {
-            const newSheet = currentSheet + direction;
-            if (newSheet >= 1 && newSheet <= maxSheet) {
-                goToSheet(newSheet);
-            }
-        }
-
-        function goToSheet(sheetNumber) {
-            currentSheet = sheetNumber;
-            updateSheetNavigator();
-            updateNumberGrid();
-            updateSelectedDisplay();
-        }
-
-        function createNewSheet() {
-            maxSheet++;
-            currentSheet = maxSheet;
-            updateSheetNavigator();
-            updateNumberGrid();
-            updateSelectedDisplay();
-            showToast("สร้างใบใหม่สำเร็จ", "success");
-        }
-
-        async function saveLotteryData() {
-            const playerName = document.getElementById('playerName').value.trim();
-            const period = document.getElementById('periodSelect').value;
-            
-            if (!playerName) {
-                showToast("กรุณากรอกชื่อผู้เล่น", "error");
-                return;
-            }
-
-            if (currentRecordCount >= 999) {
-                showToast("ถึงขีดจำกัดการเก็บข้อมูล 999 รายการแล้ว", "error");
-                return;
-            }
-
-            const key = `${period}-${currentSheet}`;
-            const selectedNums = sheetData[key] ? Array.from(sheetData[key]) : [];
-            
-            if (selectedNums.length === 0) {
-                showToast("กรุณาเลือกเลขอย่างน้อย 1 หลัก", "error");
-                return;
-            }
-
-            if (window.dataSdk) {
-                for (const number of selectedNums) {
-                    const lotteryRecord = {
-                        player_name: playerName,
-                        selected_number: number,
-                        period_date: period,
-                        sheet_number: currentSheet,
-                        created_date: new Date().toISOString()
-                    };
-
-                    const result = await window.dataSdk.create(lotteryRecord);
-                    if (!result.isOk) {
-                        showToast("เกิดข้อผิดพลาดในการบันทึกข้อมูล", "error");
-                        return;
-                    }
-                }
-                
-                showToast("บันทึกข้อมูลสำเร็จ!", "success");
-                sheetData[key] = new Set();
-                updateSelectedDisplay();
-            }
-        }
-
-        async function updateLotteryData() {
-            showToast("กำลังอัพเดทข้อมูล...", "success");
-            updateLotteryDisplay();
-        }
-
-        function updateLotteryDisplay() {
-            const period = document.getElementById('periodSelect')?.value || '1';
-            const key = `${period}-${currentSheet}`;
-            
-            takenNumbers.clear();
-            
-            lotteryData.forEach(record => {
-                if (record.period_date == period && record.sheet_number == currentSheet) {
-                    const takenKey = `${record.selected_number}-${key}`;
-                    takenNumbers.add(takenKey);
-                }
-            });
-            
-            updateNumberGrid();
-            updateSelectedDisplay();
-            displayLotteryTable();
-        }
-
-        function displayLotteryTable() {
-            const tableBody = document.getElementById('lotteryTableBody');
-            if (!tableBody) return;
-            
-            tableBody.innerHTML = '';
-            
-            // Group by player, period, and sheet
-            const groupedData = {};
-            lotteryData.forEach(record => {
-                const key = `${record.player_name}-${record.period_date}-${record.sheet_number}`;
-                if (!groupedData[key]) {
-                    groupedData[key] = {
-                        player_name: record.player_name,
-                        period_date: record.period_date,
-                        sheet_number: record.sheet_number,
-                        numbers: []
-                    };
-                }
-                groupedData[key].numbers.push(record.selected_number);
-            });
-            
-            // Display grouped data
-            Object.values(groupedData).forEach(group => {
-                const row = document.createElement('tr');
-                row.innerHTML = `
-                    <td>${group.player_name}</td>
-                    <td>${group.numbers.sort().join(', ')}</td>
-                    <td>${group.period_date}</td>
-                    <td>${group.sheet_number}</td>
-                `;
-                tableBody.appendChild(row);
-            });
-        }
-
-        function searchWinner() {
-            const searchInput = document.getElementById('winnerSearchInput');
-            const searchNumber = searchInput.value.trim().padStart(2, '0');
-            
-            if (!/^\d{2}$/.test(searchNumber)) {
-                showToast("กรุณากรอกเลข 2 หลัก (00-99)", "error");
-                return;
-            }
-
-            const winners = lotteryData.filter(record => 
-                record.selected_number === searchNumber
-            );
-
-            displayWinnerResults(winners, searchNumber);
-            document.getElementById('winnerResults').style.display = 'block';
-        }
-
-        function displayWinnerResults(winners, searchNumber) {
-            const tableBody = document.getElementById('winnerTableBody');
-            if (!tableBody) return;
-            
-            tableBody.innerHTML = '';
-            
-            if (winners.length === 0) {
-                const row = document.createElement('tr');
-                row.innerHTML = `<td colspan="4" style="text-align: center;">ไม่พบผู้ถูกรางวัลสำหรับเลข ${searchNumber}</td>`;
-                tableBody.appendChild(row);
-                return;
-            }
-
-            winners.forEach(winner => {
-                const row = document.createElement('tr');
-                row.innerHTML = `
-                    <td>${winner.player_name}</td>
-                    <td>${winner.selected_number}</td>
-                    <td>${winner.period_date}</td>
-                    <td>${winner.sheet_number}</td>
-                `;
-                tableBody.appendChild(row);
-            });
-        }
-
-        function showPage(pageId) {
-            document.querySelectorAll('.page').forEach(page => {
-                page.classList.remove('active');
-            });
-            document.getElementById(pageId).classList.add('active');
-            
-            if (pageId === 'lotteryPage') {
-                setTimeout(() => {
-                    initializeLottery();
-                }, 100);
-            }
-        }
-
-        function showToast(message, type = 'success') {
-            const toast = document.createElement('div');
-            toast.className = `toast ${type}`;
-            toast.textContent = message;
-            document.body.appendChild(toast);
-
-            setTimeout(() => toast.classList.add('show'), 100);
-            setTimeout(() => {
-                toast.classList.remove('show');
-                setTimeout(() => document.body.removeChild(toast), 300);
-            }, 3000);
-        }
-
-        document.addEventListener('DOMContentLoaded', initializeApp);
-    </script>
- <script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'9921e12d316ad022',t:'MTc2MTA2MTUwMS4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
-</html>
+<!doctype html><html lang="th"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>Online Club Management (ระบบจัดการชมรมออนไลน์)</title><!-- Tailwind CSS CDN for modern styling --><script src="https://www.google.com/search?q=https://cdn.tailwindcss.com"></script><!-- SweetAlert2 CDN for attractive alerts --><script src="https://www.google.com/search?q=https://cdn.jsdelivr.net/npm/sweetalert2%4011"></script><style>@import url('https://www.google.com/search?q=https://fonts.googleapis.com/css2%3Ffamily%3DSarabun:wght%40400%3B700%26display%3Dswap');    body {
+        font-family: 'Sarabun', sans-serif;
+        background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
+        min-height: 100vh;
+        color: #333;
+        padding: 20px;
+    }
+
+    .glass-container {
+        background: rgba(255, 255, 255, 0.15);
+        backdrop-filter: blur(10px);
+        border-radius: 20px;
+        border: 1px solid rgba(255, 255, 255, 0.3);
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        padding: 2rem;
+        max-width: 900px;
+        margin: 0 auto;
+    }
+    
+    .btn-primary {
+        @apply bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded-lg transition duration-200 shadow-lg;
+    }
+    
+    .btn-secondary {
+        @apply bg-gray-500 hover:bg-gray-600 text-white font-bold py-2 px-4 rounded-lg transition duration-200 shadow-lg;
+    }
+
+    .input-field {
+        @apply w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-400 transition duration-200;
+    }
+    
+    .data-table th, .data-table td {
+        @apply p-3 text-sm text-gray-800 border-b border-gray-200;
+    }
+    .data-table th {
+        @apply bg-gray-100 font-semibold text-left;
+    }
+    
+    /* Custom SweetAlert2 styling for a better look */
+    .swal2-popup {
+        border-radius: 15px !important;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2) !important;
+    }
+</style></head><body class="flex flex-col items-center justify-center"><div class="glass-container w-full"><h1 class="text-4xl font-bold text-white text-center mb-6 drop-shadow-md">ระบบจัดการข้อมูลสมาชิกชมรมออนไลน์</h1><!-- ส่วนฟอร์มบันทึกข้อมูล --><section class="bg-white/90 p-6 rounded-xl mb-8 shadow-inner"><h2 class="text-2xl font-semibold mb-4 text-gray-700">บันทึกข้อมูลสมาชิก (Local & Sheet)</h2><form id="clubForm" class="space-y-4"><div><label for="memberId" class="block text-sm font-medium text-gray-700">รหัสสมาชิก (ID)</label><input type="text" id="memberId" name="memberId" class="input-field" placeholder="เช่น 001" required></div><div><label for="memberName" class="block text-sm font-medium text-gray-700">ชื่อสมาชิก</label><input type="text" id="memberName" name="memberName" class="input-field" placeholder="เช่น นายสมชาย" required></div><div><label for="clubName" class="block text-sm font-medium text-gray-700">ชื่อชมรม</label><select id="clubName" name="clubName" class="input-field" required><option value="">-- เลือกชมรม --</option><option value="Programming">Programming Club</option><option value="Design">Design Studio</option><option value="Media">Media Production</option></select></div><div class="flex space-x-4 pt-2"><button type="button" onclick="saveDataToLocalStorage()" class="btn-primary flex-1">บันทึกข้อมูลใน Local Storage</button><button type="button" id="submitAllBtn" onclick="sendAllDataToSheet()" class="btn-secondary flex-1"><i class="fas fa-save"></i> ส่งข้อมูลทั้งหมดไป Google Sheet</button></div></form><div id="localStorageStatus" class="mt-4 text-center text-sm font-medium text-gray-600"></div></section><!-- ส่วนแสดงข้อมูล Google Sheet --><section class="bg-white/90 p-6 rounded-xl shadow-inner"><h2 class="text-2xl font-semibold mb-4 text-gray-700">ข้อมูลสมาชิกจาก Google Sheet</h2><button type="button" id="updateDataBtn" onclick="loadDataFromSheet()" class="btn-primary mb-4"><i class="fas fa-sync-alt"></i> อัพเดทข้อมูลจาก Google Sheet</button><div class="overflow-x-auto rounded-lg shadow-md">
+ <table id="sheetDataDisplay" class="min-w-full data-table">
+  <thead>
+   <tr>
+    <th>ID</th>
+    <th>ชื่อสมาชิก</th>
+    <th>ชมรม</th>
+    <th>วัน-เวลาที่บันทึก</th>
+   </tr>
+  </thead>
+  <tbody>
+   <tr><td colspan="4" class="text-center text-gray-500 py-4">กด "อัพเดทข้อมูลจาก Google Sheet" เพื่อเรียกดู</td></tr>
+  </tbody>
+ </table>
+</div>
+</section></div><script>// URL สำหรับ Google App Script (GS) ที่จะจัดการการส่งและรับข้อมูลconst GS_EXEC_URL = 'https://script.google.com/macros/s/AKfycbx2Mk1JgpdW_ob-zp2QgUq3dbijn8NAIYKmeRAENmv7jShDAM8wvInKHB-X9uEWRguWTA/exec';//---------------------------------------------------------
+// 1. ฟังก์ชัน Local Storage (บันทึกข้อมูลถาวรในเบราว์เซอร์)
+//---------------------------------------------------------
+
+function getLocalData() {
+    const data = localStorage.getItem(&#39;clubData&#39;);
+    return data ? JSON.parse(data) : [];
+}
+
+function saveDataToLocalStorage() {
+    const form = document.getElementById(&#39;clubForm&#39;);
+    const memberId = form.memberId.value.trim();
+    const memberName = form.memberName.value.trim();
+    const clubName = form.clubName.value.trim();
+
+    if (!memberId || !memberName || !clubName) {
+        Swal.fire(&#39;ข้อผิดพลาด&#39;, &#39;กรุณากรอกข้อมูลให้ครบถ้วนก่อนบันทึกใน Local Storage&#39;, &#39;error&#39;);
+        return;
+    }
+
+    let currentData = getLocalData();
+    const timestamp = new Date().toLocaleString(&#39;th-TH&#39;, { hour12: false });
+
+    // ตรวจสอบและอัพเดทข้อมูลที่มีอยู่ หรือเพิ่มข้อมูลใหม่
+    const existingIndex = currentData.findIndex(item =&gt; item.memberId === memberId);
+
+    const newData = {
+        memberId: memberId,
+        memberName: memberName,
+        clubName: clubName,
+        timestamp: timestamp
+    };
+
+    if (existingIndex &gt; -1) {
+        currentData[existingIndex] = newData; // อัพเดท
+        Swal.fire(&#39;สำเร็จ&#39;, `อัพเดทข้อมูลสมาชิก ID: ${memberId} ใน Local Storage แล้ว`, &#39;success&#39;);
+    } else {
+        currentData.push(newData); // เพิ่มใหม่
+        Swal.fire(&#39;สำเร็จ&#39;, `บันทึกข้อมูลสมาชิก ID: ${memberId} ลงใน Local Storage แล้ว`, &#39;success&#39;);
+    }
+
+    localStorage.setItem(&#39;clubData&#39;, JSON.stringify(currentData));
+    document.getElementById(&#39;localStorageStatus&#39;).textContent = `มีข้อมูลใน Local Storage ${currentData.length} รายการ`;
+    form.reset();
+}
+
+// โหลดข้อมูลเมื่อเริ่มต้น (ใน initializeApp)
+function initializeApp() {
+    // อัพเดทสถานะ Local Storage
+    const currentData = getLocalData();
+    document.getElementById(&#39;localStorageStatus&#39;).textContent = `มีข้อมูลใน Local Storage ${currentData.length} รายการ`;
+}
+
+
+//---------------------------------------------------------
+// 2. ฟังก์ชัน Google Sheet - บันทึกข้อมูล (JSONP)
+//---------------------------------------------------------
+
+function sendAllDataToSheet() {
+    const allLocalData = getLocalData();
+
+    if (allLocalData.length === 0) {
+        Swal.fire(&#39;ไม่มีข้อมูล&#39;, &#39;ไม่มีข้อมูลใน Local Storage ที่ต้องส่ง&#39;, &#39;warning&#39;);
+        return;
+    }
+
+    // แสดงสถานะกำลังบันทึก
+    Swal.fire({
+        title: &#39;กำลังบันทึกข้อมูล...&#39;,
+        text: &#39;กรุณารอสักครู่ ระบบกำลังส่งข้อมูลไปยัง Google Sheet&#39;,
+        icon: &#39;info&#39;,
+        showConfirmButton: false,
+        allowOutsideClick: false,
+        willOpen: () =&gt; {
+            Swal.showLoading();
+        }
+    });
+
+    // เตรียมข้อมูลและ JSONP
+    const callbackName = &#39;sheetSubmissionCallback&#39;;
+    const dataToSend = {
+        action: &#39;save&#39;,
+        data: JSON.stringify(allLocalData)
+    };
+
+    makeJsonpRequest(GS_EXEC_URL, dataToSend, callbackName);
+}
+
+// ฟังก์ชัน Callback สำหรับการบันทึกข้อมูล
+window.sheetSubmissionCallback = function(response) {
+    if (response.result === &#39;success&#39;) {
+        // ล้าง Local Storage หลังจากบันทึกสำเร็จ (ทางเลือก)
+        // localStorage.removeItem(&#39;clubData&#39;); 
+        // document.getElementById(&#39;localStorageStatus&#39;).textContent = &#39;Local Storage ถูกเคลียร์แล้ว&#39;;
+        Swal.fire(
+            &#39;บันทึกสำเร็จ!&#39;,
+            `บันทึกข้อมูลสมาชิก ${response.count} รายการไปยัง Google Sheet เรียบร้อยแล้ว`,
+            &#39;success&#39;
+        );
+    } else {
+        console.error(&#39;GS Error:&#39;, response.error);
+        Swal.fire(
+            &#39;บันทึกไม่สำเร็จ&#39;,
+            `เกิดข้อผิดพลาดในการบันทึก: ${response.error || &#39;โปรดตรวจสอบ Google App Script&#39;}`,
+            &#39;error&#39;
+        );
+    }
+    // อัพเดทสถานะ Local Storage อีกครั้ง
+    initializeApp();
+}
+
+
+//---------------------------------------------------------
+// 3. ฟังก์ชัน Google Sheet - เรียกดูข้อมูล (JSONP)
+//---------------------------------------------------------
+
+function loadDataFromSheet() {
+    // แสดงสถานะกำลังโหลด
+    Swal.fire({
+        title: &#39;กำลังอัพเดทข้อมูล...&#39;,
+        text: &#39;กำลังดึงข้อมูลล่าสุดจาก Google Sheet&#39;,
+        icon: &#39;info&#39;,
+        showConfirmButton: false,
+        allowOutsideClick: false,
+        willOpen: () =&gt; {
+            Swal.showLoading();
+        }
+    });
+
+    const callbackName = &#39;sheetRetrievalCallback&#39;;
+    const dataToRequest = {
+        action: &#39;read&#39;
+    };
+
+    makeJsonpRequest(GS_EXEC_URL, dataToRequest, callbackName);
+}
+
+// ฟังก์ชัน Callback สำหรับการเรียกดูข้อมูล
+window.sheetRetrievalCallback = function(response) {
+    if (response.result === &#39;success&#39; &amp;&amp; response.data) {
+        displaySheetData(response.data);
+        Swal.fire(
+            &#39;อัพเดทสำเร็จ!&#39;,
+            `ดึงข้อมูลสมาชิก ${response.data.length} รายการจาก Google Sheet เรียบร้อยแล้ว`,
+            &#39;success&#39;
+        );
+    } else {
+        console.error(&#39;GS Error:&#39;, response.error);
+        Swal.fire(
+            &#39;อัพเดทไม่สำเร็จ&#39;,
+            `เกิดข้อผิดพลาดในการดึงข้อมูล: ${response.error || &#39;โปรดตรวจสอบ Google App Script และ Sheet&#39;}`,
+            &#39;error&#39;
+        );
+    }
+}
+
+// ฟังก์ชันแสดงผลในตาราง
+function displaySheetData(data) {
+    const tableBody = document.querySelector(&#39;#sheetDataDisplay tbody&#39;);
+    tableBody.innerHTML = &#39;&#39;; // เคลียร์ข้อมูลเก่า
+
+    if (data.length === 0) {
+        tableBody.innerHTML = &#39;&lt;tr&gt;&lt;td colspan=&quot;4&quot; class=&quot;text-center text-gray-500 py-4&quot;&gt;ไม่พบข้อมูลใน Google Sheet&lt;/td&gt;&lt;/tr&gt;&#39;;
+        return;
+    }
+
+    data.forEach(row =&gt; {
+        const tr = document.createElement(&#39;tr&#39;);
+        // คาดหวังลำดับคอลัมน์จาก GAS: [memberId, memberName, clubName, timestamp]
+        tr.innerHTML = `
+            &lt;td class=&quot;font-mono&quot;&gt;${row[0] || &#39;-&#39;}&lt;/td&gt;
+            &lt;td&gt;${row[1] || &#39;-&#39;}&lt;/td&gt;
+            &lt;td&gt;${row[2] || &#39;-&#39;}&lt;/td&gt;
+            &lt;td class=&quot;text-xs text-gray-500&quot;&gt;${row[3] || &#39;-&#39;}&lt;/td&gt;
+        `;
+        tableBody.appendChild(tr);
+    });
+}
+
+//---------------------------------------------------------
+// 4. JSONP Helper Function (ใช้งานร่วมกันทั้งบันทึกและเรียกดู)
+//---------------------------------------------------------
+
+/**
+ * สร้างคำขอ JSONP
+ * @param {string} url - URL ของ Google App Script
+ * @param {object} data - ข้อมูลที่จะส่ง
+ * @param {string} callbackName - ชื่อฟังก์ชัน callback ที่จะถูกเรียกเมื่อได้รับข้อมูล
+ */
+function makeJsonpRequest(url, data, callbackName) {
+    const scriptId = &#39;jsonp-script-&#39; + Date.now();
+    
+    // Construct the URL with data and callback
+    const urlParams = new URLSearchParams(data).toString();
+    const finalUrl = `${url}?${urlParams}&amp;callback=${callbackName}`;
+
+    // 1. Inject the script tag
+    const script = document.createElement(&#39;script&#39;);
+    script.src = finalUrl;
+    script.id = scriptId;
+    
+    // 2. Add error handling for script load (e.g., 404 or script issue)
+    const timeout = setTimeout(() =&gt; {
+        if(document.getElementById(scriptId)) {
+            document.body.removeChild(script);
+            Swal.fire(&#39;Time Out&#39;, &#39;ไม่สามารถติดต่อ Google App Script ได้ภายในเวลาที่กำหนด&#39;, &#39;error&#39;);
+        }
+    }, 15000); // 15 วินาที
+
+    script.onerror = () =&gt; {
+        clearTimeout(timeout);
+        if(document.getElementById(scriptId)) {
+            document.body.removeChild(script);
+            Swal.fire(&#39;Connection Error&#39;, &#39;ไม่สามารถโหลด Google App Script ได้ โปรดตรวจสอบ URL&#39;, &#39;error&#39;);
+        }
+        delete window[callbackName];
+    };
+    
+    // Clean up the script and timeout after success (handled in callback)
+    const originalCallback = window[callbackName];
+    window[callbackName] = function(response) {
+        clearTimeout(timeout);
+        originalCallback(response);
+        
+        // Clean up the script tag and the dynamic function
+        const scriptTag = document.getElementById(scriptId);
+        if (scriptTag) {
+            document.body.removeChild(scriptTag);
+        }
+        delete window[callbackName];
+    };
+
+
+    document.body.appendChild(script);
+}
+
+
+// เริ่มต้นการทำงานเมื่อ DOM โหลดเสร็จสิ้น
+document.addEventListener(&#39;DOMContentLoaded&#39;, initializeApp);
+</script></body></html>
