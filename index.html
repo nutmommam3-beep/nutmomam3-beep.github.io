@@ -1,298 +1,3037 @@
-<!doctype html><html lang="th"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>Online Club Management (ระบบจัดการชมรมออนไลน์)</title><!-- Tailwind CSS CDN for modern styling --><script src="https://www.google.com/search?q=https://cdn.tailwindcss.com"></script><!-- SweetAlert2 CDN for attractive alerts --><script src="https://www.google.com/search?q=https://cdn.jsdelivr.net/npm/sweetalert2%4011"></script><style>@import url('https://www.google.com/search?q=https://fonts.googleapis.com/css2%3Ffamily%3DSarabun:wght%40400%3B700%26display%3Dswap');    body {
-        font-family: 'Sarabun', sans-serif;
-        background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
-        min-height: 100vh;
-        color: #333;
-        padding: 20px;
-    }
-
-    .glass-container {
-        background: rgba(255, 255, 255, 0.15);
-        backdrop-filter: blur(10px);
-        border-radius: 20px;
-        border: 1px solid rgba(255, 255, 255, 0.3);
-        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-        padding: 2rem;
-        max-width: 900px;
-        margin: 0 auto;
-    }
-    
-    .btn-primary {
-        @apply bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded-lg transition duration-200 shadow-lg;
-    }
-    
-    .btn-secondary {
-        @apply bg-gray-500 hover:bg-gray-600 text-white font-bold py-2 px-4 rounded-lg transition duration-200 shadow-lg;
-    }
-
-    .input-field {
-        @apply w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-400 transition duration-200;
-    }
-    
-    .data-table th, .data-table td {
-        @apply p-3 text-sm text-gray-800 border-b border-gray-200;
-    }
-    .data-table th {
-        @apply bg-gray-100 font-semibold text-left;
-    }
-    
-    /* Custom SweetAlert2 styling for a better look */
-    .swal2-popup {
-        border-radius: 15px !important;
-        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2) !important;
-    }
-</style></head><body class="flex flex-col items-center justify-center"><div class="glass-container w-full"><h1 class="text-4xl font-bold text-white text-center mb-6 drop-shadow-md">ระบบจัดการข้อมูลสมาชิกชมรมออนไลน์</h1><!-- ส่วนฟอร์มบันทึกข้อมูล --><section class="bg-white/90 p-6 rounded-xl mb-8 shadow-inner"><h2 class="text-2xl font-semibold mb-4 text-gray-700">บันทึกข้อมูลสมาชิก (Local & Sheet)</h2><form id="clubForm" class="space-y-4"><div><label for="memberId" class="block text-sm font-medium text-gray-700">รหัสสมาชิก (ID)</label><input type="text" id="memberId" name="memberId" class="input-field" placeholder="เช่น 001" required></div><div><label for="memberName" class="block text-sm font-medium text-gray-700">ชื่อสมาชิก</label><input type="text" id="memberName" name="memberName" class="input-field" placeholder="เช่น นายสมชาย" required></div><div><label for="clubName" class="block text-sm font-medium text-gray-700">ชื่อชมรม</label><select id="clubName" name="clubName" class="input-field" required><option value="">-- เลือกชมรม --</option><option value="Programming">Programming Club</option><option value="Design">Design Studio</option><option value="Media">Media Production</option></select></div><div class="flex space-x-4 pt-2"><button type="button" onclick="saveDataToLocalStorage()" class="btn-primary flex-1">บันทึกข้อมูลใน Local Storage</button><button type="button" id="submitAllBtn" onclick="sendAllDataToSheet()" class="btn-secondary flex-1"><i class="fas fa-save"></i> ส่งข้อมูลทั้งหมดไป Google Sheet</button></div></form><div id="localStorageStatus" class="mt-4 text-center text-sm font-medium text-gray-600"></div></section><!-- ส่วนแสดงข้อมูล Google Sheet --><section class="bg-white/90 p-6 rounded-xl shadow-inner"><h2 class="text-2xl font-semibold mb-4 text-gray-700">ข้อมูลสมาชิกจาก Google Sheet</h2><button type="button" id="updateDataBtn" onclick="loadDataFromSheet()" class="btn-primary mb-4"><i class="fas fa-sync-alt"></i> อัพเดทข้อมูลจาก Google Sheet</button><div class="overflow-x-auto rounded-lg shadow-md">
- <table id="sheetDataDisplay" class="min-w-full data-table">
-  <thead>
-   <tr>
-    <th>ID</th>
-    <th>ชื่อสมาชิก</th>
-    <th>ชมรม</th>
-    <th>วัน-เวลาที่บันทึก</th>
-   </tr>
-  </thead>
-  <tbody>
-   <tr><td colspan="4" class="text-center text-gray-500 py-4">กด "อัพเดทข้อมูลจาก Google Sheet" เพื่อเรียกดู</td></tr>
-  </tbody>
- </table>
-</div>
-</section></div><script>// URL สำหรับ Google App Script (GS) ที่จะจัดการการส่งและรับข้อมูลconst GS_EXEC_URL = 'https://script.google.com/macros/s/AKfycbx2Mk1JgpdW_ob-zp2QgUq3dbijn8NAIYKmeRAENmv7jShDAM8wvInKHB-X9uEWRguWTA/exec';//---------------------------------------------------------
-// 1. ฟังก์ชัน Local Storage (บันทึกข้อมูลถาวรในเบราว์เซอร์)
-//---------------------------------------------------------
-
-function getLocalData() {
-    const data = localStorage.getItem(&#39;clubData&#39;);
-    return data ? JSON.parse(data) : [];
-}
-
-function saveDataToLocalStorage() {
-    const form = document.getElementById(&#39;clubForm&#39;);
-    const memberId = form.memberId.value.trim();
-    const memberName = form.memberName.value.trim();
-    const clubName = form.clubName.value.trim();
-
-    if (!memberId || !memberName || !clubName) {
-        Swal.fire(&#39;ข้อผิดพลาด&#39;, &#39;กรุณากรอกข้อมูลให้ครบถ้วนก่อนบันทึกใน Local Storage&#39;, &#39;error&#39;);
-        return;
-    }
-
-    let currentData = getLocalData();
-    const timestamp = new Date().toLocaleString(&#39;th-TH&#39;, { hour12: false });
-
-    // ตรวจสอบและอัพเดทข้อมูลที่มีอยู่ หรือเพิ่มข้อมูลใหม่
-    const existingIndex = currentData.findIndex(item =&gt; item.memberId === memberId);
-
-    const newData = {
-        memberId: memberId,
-        memberName: memberName,
-        clubName: clubName,
-        timestamp: timestamp
-    };
-
-    if (existingIndex &gt; -1) {
-        currentData[existingIndex] = newData; // อัพเดท
-        Swal.fire(&#39;สำเร็จ&#39;, `อัพเดทข้อมูลสมาชิก ID: ${memberId} ใน Local Storage แล้ว`, &#39;success&#39;);
-    } else {
-        currentData.push(newData); // เพิ่มใหม่
-        Swal.fire(&#39;สำเร็จ&#39;, `บันทึกข้อมูลสมาชิก ID: ${memberId} ลงใน Local Storage แล้ว`, &#39;success&#39;);
-    }
-
-    localStorage.setItem(&#39;clubData&#39;, JSON.stringify(currentData));
-    document.getElementById(&#39;localStorageStatus&#39;).textContent = `มีข้อมูลใน Local Storage ${currentData.length} รายการ`;
-    form.reset();
-}
-
-// โหลดข้อมูลเมื่อเริ่มต้น (ใน initializeApp)
-function initializeApp() {
-    // อัพเดทสถานะ Local Storage
-    const currentData = getLocalData();
-    document.getElementById(&#39;localStorageStatus&#39;).textContent = `มีข้อมูลใน Local Storage ${currentData.length} รายการ`;
-}
-
-
-//---------------------------------------------------------
-// 2. ฟังก์ชัน Google Sheet - บันทึกข้อมูล (JSONP)
-//---------------------------------------------------------
-
-function sendAllDataToSheet() {
-    const allLocalData = getLocalData();
-
-    if (allLocalData.length === 0) {
-        Swal.fire(&#39;ไม่มีข้อมูล&#39;, &#39;ไม่มีข้อมูลใน Local Storage ที่ต้องส่ง&#39;, &#39;warning&#39;);
-        return;
-    }
-
-    // แสดงสถานะกำลังบันทึก
-    Swal.fire({
-        title: &#39;กำลังบันทึกข้อมูล...&#39;,
-        text: &#39;กรุณารอสักครู่ ระบบกำลังส่งข้อมูลไปยัง Google Sheet&#39;,
-        icon: &#39;info&#39;,
-        showConfirmButton: false,
-        allowOutsideClick: false,
-        willOpen: () =&gt; {
-            Swal.showLoading();
+<!doctype html>
+<html lang="th">
+ <head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Score Management System</title>
+  <script src="/_sdk/element_sdk.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+  <style>
+        body {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            height: 100vh;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
+            overflow-x: hidden;
+            color: white;
         }
-    });
 
-    // เตรียมข้อมูลและ JSONP
-    const callbackName = &#39;sheetSubmissionCallback&#39;;
-    const dataToSend = {
-        action: &#39;save&#39;,
-        data: JSON.stringify(allLocalData)
-    };
-
-    makeJsonpRequest(GS_EXEC_URL, dataToSend, callbackName);
-}
-
-// ฟังก์ชัน Callback สำหรับการบันทึกข้อมูล
-window.sheetSubmissionCallback = function(response) {
-    if (response.result === &#39;success&#39;) {
-        // ล้าง Local Storage หลังจากบันทึกสำเร็จ (ทางเลือก)
-        // localStorage.removeItem(&#39;clubData&#39;); 
-        // document.getElementById(&#39;localStorageStatus&#39;).textContent = &#39;Local Storage ถูกเคลียร์แล้ว&#39;;
-        Swal.fire(
-            &#39;บันทึกสำเร็จ!&#39;,
-            `บันทึกข้อมูลสมาชิก ${response.count} รายการไปยัง Google Sheet เรียบร้อยแล้ว`,
-            &#39;success&#39;
-        );
-    } else {
-        console.error(&#39;GS Error:&#39;, response.error);
-        Swal.fire(
-            &#39;บันทึกไม่สำเร็จ&#39;,
-            `เกิดข้อผิดพลาดในการบันทึก: ${response.error || &#39;โปรดตรวจสอบ Google App Script&#39;}`,
-            &#39;error&#39;
-        );
-    }
-    // อัพเดทสถานะ Local Storage อีกครั้ง
-    initializeApp();
-}
-
-
-//---------------------------------------------------------
-// 3. ฟังก์ชัน Google Sheet - เรียกดูข้อมูล (JSONP)
-//---------------------------------------------------------
-
-function loadDataFromSheet() {
-    // แสดงสถานะกำลังโหลด
-    Swal.fire({
-        title: &#39;กำลังอัพเดทข้อมูล...&#39;,
-        text: &#39;กำลังดึงข้อมูลล่าสุดจาก Google Sheet&#39;,
-        icon: &#39;info&#39;,
-        showConfirmButton: false,
-        allowOutsideClick: false,
-        willOpen: () =&gt; {
-            Swal.showLoading();
+        html {
+            height: 100%;
         }
-    });
 
-    const callbackName = &#39;sheetRetrievalCallback&#39;;
-    const dataToRequest = {
-        action: &#39;read&#39;
-    };
-
-    makeJsonpRequest(GS_EXEC_URL, dataToRequest, callbackName);
-}
-
-// ฟังก์ชัน Callback สำหรับการเรียกดูข้อมูล
-window.sheetRetrievalCallback = function(response) {
-    if (response.result === &#39;success&#39; &amp;&amp; response.data) {
-        displaySheetData(response.data);
-        Swal.fire(
-            &#39;อัพเดทสำเร็จ!&#39;,
-            `ดึงข้อมูลสมาชิก ${response.data.length} รายการจาก Google Sheet เรียบร้อยแล้ว`,
-            &#39;success&#39;
-        );
-    } else {
-        console.error(&#39;GS Error:&#39;, response.error);
-        Swal.fire(
-            &#39;อัพเดทไม่สำเร็จ&#39;,
-            `เกิดข้อผิดพลาดในการดึงข้อมูล: ${response.error || &#39;โปรดตรวจสอบ Google App Script และ Sheet&#39;}`,
-            &#39;error&#39;
-        );
-    }
-}
-
-// ฟังก์ชันแสดงผลในตาราง
-function displaySheetData(data) {
-    const tableBody = document.querySelector(&#39;#sheetDataDisplay tbody&#39;);
-    tableBody.innerHTML = &#39;&#39;; // เคลียร์ข้อมูลเก่า
-
-    if (data.length === 0) {
-        tableBody.innerHTML = &#39;&lt;tr&gt;&lt;td colspan=&quot;4&quot; class=&quot;text-center text-gray-500 py-4&quot;&gt;ไม่พบข้อมูลใน Google Sheet&lt;/td&gt;&lt;/tr&gt;&#39;;
-        return;
-    }
-
-    data.forEach(row =&gt; {
-        const tr = document.createElement(&#39;tr&#39;);
-        // คาดหวังลำดับคอลัมน์จาก GAS: [memberId, memberName, clubName, timestamp]
-        tr.innerHTML = `
-            &lt;td class=&quot;font-mono&quot;&gt;${row[0] || &#39;-&#39;}&lt;/td&gt;
-            &lt;td&gt;${row[1] || &#39;-&#39;}&lt;/td&gt;
-            &lt;td&gt;${row[2] || &#39;-&#39;}&lt;/td&gt;
-            &lt;td class=&quot;text-xs text-gray-500&quot;&gt;${row[3] || &#39;-&#39;}&lt;/td&gt;
-        `;
-        tableBody.appendChild(tr);
-    });
-}
-
-//---------------------------------------------------------
-// 4. JSONP Helper Function (ใช้งานร่วมกันทั้งบันทึกและเรียกดู)
-//---------------------------------------------------------
-
-/**
- * สร้างคำขอ JSONP
- * @param {string} url - URL ของ Google App Script
- * @param {object} data - ข้อมูลที่จะส่ง
- * @param {string} callbackName - ชื่อฟังก์ชัน callback ที่จะถูกเรียกเมื่อได้รับข้อมูล
- */
-function makeJsonpRequest(url, data, callbackName) {
-    const scriptId = &#39;jsonp-script-&#39; + Date.now();
-    
-    // Construct the URL with data and callback
-    const urlParams = new URLSearchParams(data).toString();
-    const finalUrl = `${url}?${urlParams}&amp;callback=${callbackName}`;
-
-    // 1. Inject the script tag
-    const script = document.createElement(&#39;script&#39;);
-    script.src = finalUrl;
-    script.id = scriptId;
-    
-    // 2. Add error handling for script load (e.g., 404 or script issue)
-    const timeout = setTimeout(() =&gt; {
-        if(document.getElementById(scriptId)) {
-            document.body.removeChild(script);
-            Swal.fire(&#39;Time Out&#39;, &#39;ไม่สามารถติดต่อ Google App Script ได้ภายในเวลาที่กำหนด&#39;, &#39;error&#39;);
+        .container {
+            min-height: 100vh;
+            padding: 2rem 1rem;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            position: relative;
         }
-    }, 15000); // 15 วินาที
 
-    script.onerror = () =&gt; {
-        clearTimeout(timeout);
-        if(document.getElementById(scriptId)) {
-            document.body.removeChild(script);
-            Swal.fire(&#39;Connection Error&#39;, &#39;ไม่สามารถโหลด Google App Script ได้ โปรดตรวจสอบ URL&#39;, &#39;error&#39;);
+        .header {
+            text-align: center;
+            margin-bottom: 3rem;
+            z-index: 10;
         }
-        delete window[callbackName];
-    };
-    
-    // Clean up the script and timeout after success (handled in callback)
-    const originalCallback = window[callbackName];
-    window[callbackName] = function(response) {
-        clearTimeout(timeout);
-        originalCallback(response);
+
+        .logo {
+            width: 120px;
+            height: auto;
+            margin-bottom: 1.5rem;
+            border-radius: 20px;
+            display: block;
+            margin-left: auto;
+            margin-right: auto;
+        }
+
+        .app-title {
+            font-size: 2rem;
+            font-weight: 700;
+            margin-bottom: 0.5rem;
+            text-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
+            background: linear-gradient(45deg, #ffffff, #e0e7ff);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .subtitle {
+            font-size: 1rem;
+            opacity: 0.8;
+            font-weight: 300;
+        }
+
+        .menu-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 1.5rem;
+            width: 100%;
+            max-width: 400px;
+            margin-bottom: 2rem;
+        }
+
+        .menu-item {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 24px;
+            padding: 2rem 1rem;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            position: relative;
+            overflow: hidden;
+            min-height: 120px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .menu-item::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: linear-gradient(45deg, rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0.05));
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        .menu-item:hover::before {
+            opacity: 1;
+        }
+
+        .menu-item:hover {
+            transform: translateY(-8px) scale(1.02);
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.2);
+            border-color: rgba(255, 255, 255, 0.4);
+        }
+
+        .menu-item:active {
+            transform: translateY(-4px) scale(0.98);
+        }
+
+        .menu-icon {
+            font-size: 2.5rem;
+            margin-bottom: 1rem;
+            display: block;
+        }
+
+        .menu-text {
+            font-size: 1rem;
+            font-weight: 600;
+            line-height: 1.3;
+            position: relative;
+            z-index: 2;
+        }
+
+        .floating-elements {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 1;
+        }
+
+        .floating-bubble {
+            position: absolute;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 50%;
+            opacity: 0.3;
+        }
+
+        .bubble-1 {
+            width: 100px;
+            height: 100px;
+            top: 10%;
+            left: 10%;
+        }
+
+        .bubble-2 {
+            width: 60px;
+            height: 60px;
+            top: 70%;
+            right: 15%;
+        }
+
+        .bubble-3 {
+            width: 80px;
+            height: 80px;
+            top: 40%;
+            left: 80%;
+        }
+
+        .glass-card {
+            background: rgba(255, 255, 255, 0.08);
+            backdrop-filter: blur(15px);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            border-radius: 20px;
+            padding: 1.5rem;
+            margin-top: 2rem;
+            width: 100%;
+            max-width: 400px;
+            text-align: center;
+        }
+
+        .status-text {
+            font-size: 0.9rem;
+            opacity: 0.7;
+            margin-bottom: 0.5rem;
+        }
+
+        .version-text {
+            font-size: 0.8rem;
+            opacity: 0.5;
+        }
+
+        @media (max-width: 480px) {
+            .container {
+                padding: 1.5rem 1rem;
+            }
+            
+            .app-title {
+                font-size: 1.8rem;
+            }
+            
+            .menu-grid {
+                gap: 1rem;
+                max-width: 350px;
+            }
+            
+            .menu-item {
+                padding: 1.5rem 0.8rem;
+                min-height: 100px;
+            }
+            
+            .menu-icon {
+                font-size: 2rem;
+                margin-bottom: 0.8rem;
+            }
+            
+            .menu-text {
+                font-size: 0.9rem;
+            }
+        }
+
+        @media (max-width: 360px) {
+            .menu-grid {
+                max-width: 320px;
+            }
+            
+            .menu-item {
+                padding: 1.2rem 0.6rem;
+                min-height: 90px;
+            }
+        }
+
+        /* Score Page Styles */
+        .score-page {
+            width: 100%;
+            max-width: 600px;
+            color: white;
+        }
+
+        .page-header {
+            display: flex;
+            align-items: center;
+            margin-bottom: 2rem;
+            gap: 1rem;
+        }
+
+        .back-btn {
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            color: white;
+            padding: 0.5rem 1rem;
+            border-radius: 12px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            transition: all 0.3s ease;
+        }
+
+        .back-btn:hover {
+            background: rgba(255, 255, 255, 0.2);
+            transform: translateX(-2px);
+        }
+
+        .page-title {
+            font-size: 1.8rem;
+            font-weight: 700;
+            margin: 0;
+            color: white;
+        }
+
+        .score-form {
+            background: rgba(255, 255, 255, 0.08);
+            backdrop-filter: blur(15px);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            border-radius: 20px;
+            padding: 2rem;
+        }
+
+        .form-group {
+            margin-bottom: 1.5rem;
+        }
+
+        .form-label {
+            display: block;
+            color: white;
+            font-weight: 500;
+            margin-bottom: 0.5rem;
+            text-align: left;
+        }
+
+        .form-input {
+            width: 100%;
+            padding: 0.75rem 1rem;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 12px;
+            background: rgba(255, 255, 255, 0.1);
+            color: white;
+            font-size: 1rem;
+            transition: all 0.3s ease;
+            box-sizing: border-box;
+        }
+
+        .form-input:focus {
+            outline: none;
+            border-color: rgba(255, 255, 255, 0.4);
+            background: rgba(255, 255, 255, 0.15);
+        }
+
+        .form-input::placeholder {
+            color: rgba(255, 255, 255, 0.6);
+        }
+
+        .score-section {
+            margin-bottom: 2rem;
+            padding: 1.5rem;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 16px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .section-title {
+            color: white;
+            font-size: 1.2rem;
+            font-weight: 600;
+            margin: 0 0 1rem 0;
+            text-align: left;
+        }
+
+        .score-display {
+            display: inline-block;
+            color: #4ade80;
+            font-weight: 600;
+            margin-left: 1rem;
+            font-size: 0.9rem;
+        }
+
+        .live-row, .content-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1rem;
+            margin-bottom: 1rem;
+        }
+
+        .live-item, .content-item {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .live-item .form-input, .content-item .form-input {
+            margin-top: 0.5rem;
+        }
+
+        .total-score {
+            background: rgba(76, 222, 128, 0.1);
+            border: 2px solid rgba(76, 222, 128, 0.3);
+            border-radius: 16px;
+            padding: 1.5rem;
+            text-align: center;
+            margin: 2rem 0;
+        }
+
+        .total-title {
+            color: white;
+            font-size: 1.4rem;
+            font-weight: 700;
+            margin: 0;
+        }
+
+        .total-title span {
+            color: white;
+        }
+
+        .submit-btn {
+            width: 100%;
+            background: linear-gradient(45deg, #4ade80, #22c55e);
+            border: none;
+            color: white;
+            padding: 1rem 2rem;
+            border-radius: 16px;
+            font-size: 1.1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(76, 222, 128, 0.3);
+        }
+
+        .submit-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(76, 222, 128, 0.4);
+        }
+
+        .submit-btn:active {
+            transform: translateY(0);
+        }
+
+        /* Notification Styles */
+        .notification {
+            position: fixed;
+            top: 2rem;
+            right: 2rem;
+            z-index: 1000;
+            max-width: 400px;
+            border-radius: 12px;
+            padding: 1rem 1.5rem;
+            color: white;
+            font-weight: 500;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+            backdrop-filter: blur(10px);
+            transition: all 0.3s ease;
+        }
+
+        .notification.hidden {
+            opacity: 0;
+            transform: translateX(100%);
+            pointer-events: none;
+        }
+
+        .notification.success {
+            background: rgba(76, 222, 128, 0.9);
+            border: 1px solid rgba(76, 222, 128, 0.3);
+        }
+
+        .notification.error {
+            background: rgba(239, 68, 68, 0.9);
+            border: 1px solid rgba(239, 68, 68, 0.3);
+        }
+
+        .notification.loading {
+            background: rgba(59, 130, 246, 0.9);
+            border: 1px solid rgba(59, 130, 246, 0.3);
+        }
+
+        .notification-content {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .notification-close {
+            background: none;
+            border: none;
+            color: white;
+            font-size: 1.2rem;
+            cursor: pointer;
+            padding: 0;
+            width: 24px;
+            height: 24px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 50%;
+            transition: background 0.2s ease;
+        }
+
+        .notification-close:hover {
+            background: rgba(255, 255, 255, 0.2);
+        }
+
+        @media (max-width: 768px) {
+            .score-form {
+                padding: 1.5rem;
+            }
+
+            .live-row, .content-row {
+                grid-template-columns: 1fr;
+                gap: 1rem;
+            }
+
+            .page-title {
+                font-size: 1.5rem;
+            }
+
+            .notification {
+                top: 1rem;
+                right: 1rem;
+                left: 1rem;
+                max-width: none;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .score-form {
+                padding: 1rem;
+            }
+
+            .score-section {
+                padding: 1rem;
+            }
+
+            .section-title {
+                font-size: 1.1rem;
+            }
+        }
+
+        /* Summary Page Styles */
+        .summary-page {
+            width: 100%;
+            max-width: 1200px;
+            color: white;
+        }
+
+        /* Tab Styles */
+        .tabs-section {
+            margin-top: 2rem;
+        }
+
+        .tab-menu {
+            display: flex;
+            gap: 0.5rem;
+            margin-bottom: 2rem;
+            border-bottom: 2px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .tab-btn {
+            background: rgba(255, 255, 255, 0.08);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            color: rgba(255, 255, 255, 0.7);
+            padding: 1rem 2rem;
+            border-radius: 12px 12px 0 0;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            border-bottom: none;
+            position: relative;
+            top: 2px;
+        }
+
+        .tab-btn:hover {
+            background: rgba(255, 255, 255, 0.15);
+            color: white;
+        }
+
+        .tab-btn.active {
+            background: rgba(76, 222, 128, 0.2);
+            border-color: rgba(76, 222, 128, 0.3);
+            color: white;
+            box-shadow: 0 4px 15px rgba(76, 222, 128, 0.2);
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        .search-section {
+            background: rgba(255, 255, 255, 0.08);
+            backdrop-filter: blur(15px);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            border-radius: 20px;
+            padding: 2rem;
+            margin-bottom: 2rem;
+        }
+
+        .date-range {
+            display: grid;
+            grid-template-columns: 1fr auto 1fr;
+            gap: 1rem;
+            align-items: center;
+            margin-bottom: 1.5rem;
+        }
+
+        .date-input-group {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .date-input {
+            padding: 0.75rem 1rem;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 12px;
+            background: rgba(255, 255, 255, 0.1);
+            color: white;
+            font-size: 1rem;
+            transition: all 0.3s ease;
+        }
+
+        .date-input:focus {
+            outline: none;
+            border-color: rgba(255, 255, 255, 0.4);
+            background: rgba(255, 255, 255, 0.15);
+        }
+
+        .date-separator {
+            text-align: center;
+            font-weight: 600;
+            color: white;
+        }
+
+        .search-btn {
+            background: linear-gradient(45deg, #4ade80, #22c55e);
+            border: none;
+            color: white;
+            padding: 0.75rem 2rem;
+            border-radius: 12px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(76, 222, 128, 0.3);
+        }
+
+        .search-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(76, 222, 128, 0.4);
+        }
+
+        .rankings-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+
+        .ranking-card {
+            background: rgba(255, 255, 255, 0.08);
+            backdrop-filter: blur(15px);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            border-radius: 16px;
+            padding: 1.5rem;
+            text-align: center;
+        }
+
+        .ranking-title {
+            font-size: 1.2rem;
+            font-weight: 700;
+            margin-bottom: 1rem;
+            color: white;
+        }
+
+        .ranking-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0.75rem 1rem;
+            margin-bottom: 0.5rem;
+            border-radius: 12px;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .ranking-item.first {
+            background: linear-gradient(45deg, rgba(255, 215, 0, 0.2), rgba(255, 215, 0, 0.1));
+            border-color: rgba(255, 215, 0, 0.3);
+        }
+
+        .ranking-item.second {
+            background: linear-gradient(45deg, rgba(192, 192, 192, 0.2), rgba(192, 192, 192, 0.1));
+            border-color: rgba(192, 192, 192, 0.3);
+        }
+
+        .ranking-item.third {
+            background: linear-gradient(45deg, rgba(205, 127, 50, 0.2), rgba(205, 127, 50, 0.1));
+            border-color: rgba(205, 127, 50, 0.3);
+        }
+
+        .ranking-position {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-weight: 600;
+        }
+
+        .medal {
+            font-size: 1.2rem;
+        }
+
+        .ranking-name {
+            font-weight: 500;
+            color: white;
+        }
+
+        .ranking-score {
+            font-weight: 700;
+            color: white;
+        }
+
+        .low-score-row {
+            background: rgba(239, 68, 68, 0.2) !important;
+            border: 1px solid rgba(239, 68, 68, 0.4) !important;
+        }
+
+        .low-score-row td {
+            color: #ff6b6b !important;
+            font-weight: 600 !important;
+        }
+
+        .low-score-row .total-score-cell {
+            color: #ef4444 !important;
+            font-weight: 700 !important;
+            font-size: 1.1rem !important;
+        }
+
+        .summary-table {
+            background: rgba(255, 255, 255, 0.08);
+            backdrop-filter: blur(15px);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            border-radius: 16px;
+            padding: 1.5rem;
+            overflow-x: auto;
+        }
+
+        .table-title {
+            font-size: 1.3rem;
+            font-weight: 700;
+            color: white;
+            margin-bottom: 1rem;
+            text-align: center;
+        }
+
+        .data-table {
+            width: 100%;
+            border-collapse: collapse;
+            color: white;
+        }
+
+        .data-table th {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 1rem 0.75rem;
+            text-align: left;
+            font-weight: 600;
+            border-bottom: 2px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .data-table td {
+            padding: 0.75rem;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .data-table tr:hover {
+            background: rgba(255, 255, 255, 0.05);
+        }
+
+        .total-row {
+            background: rgba(76, 222, 128, 0.1);
+            border-top: 2px solid rgba(76, 222, 128, 0.3);
+            font-weight: 700;
+        }
+
+        .total-row td {
+            color: #4ade80;
+        }
+
+        .no-data {
+            text-align: center;
+            color: rgba(255, 255, 255, 0.6);
+            font-style: italic;
+            padding: 2rem;
+        }
+
+        @media (max-width: 768px) {
+            .rankings-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .date-range {
+                grid-template-columns: 1fr;
+                gap: 1rem;
+            }
+
+            .date-separator {
+                order: -1;
+            }
+
+            .summary-table {
+                padding: 1rem;
+            }
+
+            .data-table th,
+            .data-table td {
+                padding: 0.5rem 0.25rem;
+                font-size: 0.9rem;
+            }
+
+            .tab-menu {
+                flex-direction: column;
+                gap: 0.5rem;
+            }
+
+            .tab-btn {
+                padding: 0.75rem 1.5rem;
+                font-size: 0.9rem;
+            }
+        }
+
+        /* Number Selection Page Styles */
+        .number-page {
+            width: 100%;
+            max-width: 1200px;
+            color: white;
+        }
+
+        /* Winner Search Page Styles */
+        .winner-page {
+            width: 100%;
+            max-width: 800px;
+            color: white;
+        }
+
+        .search-form {
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem;
+            align-items: center;
+        }
+
+        .winners-result {
+            margin-top: 2rem;
+        }
+
+        @media (max-width: 768px) {
+            .search-form {
+                gap: 1rem;
+            }
+        }
+
+        .selection-header {
+            background: rgba(255, 255, 255, 0.08);
+            backdrop-filter: blur(15px);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            border-radius: 20px;
+            padding: 2rem;
+            margin-bottom: 2rem;
+            text-align: center;
+        }
+
+        .selection-title {
+            font-size: 1.8rem;
+            font-weight: 700;
+            color: white;
+            margin-bottom: 1rem;
+        }
+
+        .period-section {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 2rem;
+            margin-bottom: 1.5rem;
+            flex-wrap: wrap;
+        }
+
+        .period-group {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .period-label {
+            font-weight: 600;
+            color: white;
+            white-space: nowrap;
+        }
+
+        .period-input {
+            padding: 0.5rem 1rem;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 8px;
+            background: rgba(255, 255, 255, 0.1);
+            color: white;
+            font-size: 1rem;
+            min-width: 180px;
+        }
+
+        .period-input::placeholder {
+            color: rgba(255, 255, 255, 0.6);
+        }
+
+        .period-input:focus {
+            outline: none;
+            border-color: rgba(255, 255, 255, 0.4);
+            background: rgba(255, 255, 255, 0.15);
+        }
+
+        .period-select {
+            padding: 0.5rem 1rem;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 8px;
+            background: rgba(255, 255, 255, 0.1);
+            color: white;
+            font-size: 1rem;
+            min-width: 120px;
+        }
+
+        .period-select option {
+            background: #1a1a1a;
+            color: white;
+        }
+
+        .selected-numbers {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 12px;
+            padding: 1rem;
+            margin-bottom: 1rem;
+        }
+
+        .selected-label {
+            font-weight: 600;
+            color: white;
+            margin-bottom: 0.5rem;
+        }
+
+        .selected-display {
+            min-height: 40px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 8px;
+            padding: 0.75rem;
+            color: #4ade80;
+            font-weight: 600;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+            align-items: center;
+        }
+
+        .selected-number {
+            background: rgba(76, 222, 128, 0.2);
+            border: 1px solid rgba(76, 222, 128, 0.3);
+            border-radius: 6px;
+            padding: 0.25rem 0.5rem;
+            font-size: 0.9rem;
+            color: white;
+            font-weight: 600;
+        }
+
+        .navigator-controls-section {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 2rem;
+            margin-bottom: 2rem;
+            flex-wrap: wrap;
+        }
+
+        .navigator-section {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            flex-wrap: wrap;
+        }
+
+        .controls-section {
+            display: flex;
+            gap: 1rem;
+            flex-wrap: wrap;
+        }
+
+        .control-btn {
+            padding: 0.75rem 1.5rem;
+            border: none;
+            border-radius: 12px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            color: white;
+            white-space: nowrap;
+        }
+
+        .save-btn {
+            background: linear-gradient(45deg, #4ade80, #22c55e);
+            box-shadow: 0 4px 15px rgba(76, 222, 128, 0.3);
+        }
+
+        .save-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(76, 222, 128, 0.4);
+        }
+
+        .new-sheet-btn {
+            background: linear-gradient(45deg, #3b82f6, #1d4ed8);
+            box-shadow: 0 4px 15px rgba(59, 130, 246, 0.3);
+        }
+
+        .new-sheet-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(59, 130, 246, 0.4);
+        }
+
+        .update-btn {
+            background: linear-gradient(45deg, #f59e0b, #d97706);
+            box-shadow: 0 4px 15px rgba(245, 158, 11, 0.3);
+        }
+
+        .update-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(245, 158, 11, 0.4);
+        }
+
+        .nav-btn {
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            color: white;
+            padding: 0.5rem 1rem;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            transition: all 0.3s ease;
+        }
+
+        .nav-btn:hover {
+            background: rgba(255, 255, 255, 0.2);
+        }
+
+        .nav-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .sheet-numbers {
+            display: flex;
+            gap: 0.5rem;
+            flex-wrap: wrap;
+        }
+
+        .sheet-number {
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            color: white;
+            padding: 0.5rem 0.75rem;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            transition: all 0.3s ease;
+            min-width: 40px;
+            text-align: center;
+        }
+
+        .sheet-number:hover {
+            background: rgba(255, 255, 255, 0.2);
+        }
+
+        .sheet-number.active {
+            background: linear-gradient(45deg, #4ade80, #22c55e);
+            border-color: rgba(76, 222, 128, 0.3);
+        }
+
+        .numbers-grid {
+            background: rgba(255, 255, 255, 0.08);
+            backdrop-filter: blur(15px);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            border-radius: 16px;
+            padding: 2rem;
+            margin-bottom: 2rem;
+        }
+
+        .grid-container {
+            display: grid;
+            grid-template-columns: repeat(10, 1fr);
+            gap: 0.75rem;
+            max-width: 800px;
+            margin: 0 auto;
+        }
+
+        .number-cell {
+            aspect-ratio: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 8px;
+            font-weight: 600;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            border: 2px solid transparent;
+            position: relative;
+        }
+
+        .number-cell.available {
+            background: linear-gradient(45deg, #22c55e, #16a34a);
+            color: white;
+            box-shadow: 0 2px 8px rgba(34, 197, 94, 0.3);
+        }
+
+        .number-cell.available:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 15px rgba(34, 197, 94, 0.4);
+        }
+
+        .number-cell.selected {
+            background: linear-gradient(45deg, #eab308, #ca8a04);
+            color: white;
+            box-shadow: 0 2px 8px rgba(234, 179, 8, 0.3);
+            border-color: rgba(234, 179, 8, 0.5);
+        }
+
+        .number-cell.taken {
+            background: linear-gradient(45deg, #ef4444, #dc2626);
+            color: white;
+            cursor: not-allowed;
+            box-shadow: 0 2px 8px rgba(239, 68, 68, 0.3);
+        }
+
+        .number-cell.taken:hover {
+            transform: none;
+        }
+
+        .selections-table {
+            background: rgba(255, 255, 255, 0.08);
+            backdrop-filter: blur(15px);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            border-radius: 16px;
+            padding: 1.5rem;
+            overflow-x: auto;
+        }
+
+        .selections-title {
+            font-size: 1.3rem;
+            font-weight: 700;
+            color: white;
+            margin-bottom: 1rem;
+            text-align: center;
+        }
+
+        .selections-data {
+            width: 100%;
+            border-collapse: collapse;
+            color: white;
+        }
+
+        .selections-data th {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 1rem 0.75rem;
+            text-align: left;
+            font-weight: 600;
+            border-bottom: 2px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .selections-data td {
+            padding: 0.75rem;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .selections-data tr:hover {
+            background: rgba(255, 255, 255, 0.05);
+        }
+
+        @media (max-width: 768px) {
+            .grid-container {
+                grid-template-columns: repeat(8, 1fr);
+                gap: 0.5rem;
+            }
+
+            .number-cell {
+                font-size: 0.9rem;
+            }
+
+            .navigator-controls-section {
+                flex-direction: column;
+                gap: 1rem;
+            }
+
+            .controls-section {
+                justify-content: center;
+            }
+
+            .control-btn {
+                padding: 0.6rem 1rem;
+                font-size: 0.9rem;
+            }
+
+            .navigator-section {
+                justify-content: center;
+            }
+
+            .sheet-numbers {
+                justify-content: center;
+            }
+
+            .period-section {
+                flex-direction: column;
+                gap: 1rem;
+            }
+
+            .period-group {
+                flex-direction: column;
+                gap: 0.5rem;
+                text-align: center;
+            }
+
+            .period-input {
+                min-width: 200px;
+            }
+
+            .selections-data th,
+            .selections-data td {
+                padding: 0.5rem 0.25rem;
+                font-size: 0.9rem;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .grid-container {
+                grid-template-columns: repeat(6, 1fr);
+            }
+
+            .number-cell {
+                font-size: 0.8rem;
+            }
+
+            .selection-title {
+                font-size: 1.5rem;
+            }
+        }
+    </style>
+  <style>@view-transition { navigation: auto; }</style>
+  <script src="/_sdk/data_sdk.js" type="text/javascript"></script>
+  <script src="https://cdn.tailwindcss.com" type="text/javascript"></script>
+ </head>
+ <body>
+  <div class="floating-elements">
+   <div class="floating-bubble bubble-1"></div>
+   <div class="floating-bubble bubble-2"></div>
+   <div class="floating-bubble bubble-3"></div>
+  </div>
+  <div class="container">
+   <div class="header"><img src="https://img2.pic.in.th/pic/-37f7f6140cfc97ae3.png" alt="Logo" class="logo" id="appLogo" onerror="this.src=''; this.alt='Logo failed to load'; this.style.display='none';">
+   </div>
+   <div class="menu-grid">
+    <div class="menu-item" onclick="selectMenu(1)"><span class="menu-icon">📝</span> <span class="menu-text" id="menu1Text">ส่งคะแนน</span>
+    </div>
+    <div class="menu-item" onclick="selectMenu(2)"><span class="menu-icon">📊</span> <span class="menu-text" id="menu2Text">สรุปคะแนน</span>
+    </div>
+    <div class="menu-item" onclick="selectMenu(3)"><span class="menu-icon">🎯</span> <span class="menu-text" id="menu3Text">เลือกเลข</span>
+    </div>
+    <div class="menu-item" onclick="selectMenu(4)"><span class="menu-icon">🏆</span> <span class="menu-text" id="menu4Text">ค้นหาผู้โชคดี</span>
+    </div>
+   </div>
+   <div class="glass-card">
+    <div class="status-text">
+     สถานะระบบ: พร้อมใช้งาน
+    </div>
+    <div class="version-text">
+     เวอร์ชัน 1.0 | Created by kanut srinin
+    </div>
+   </div>
+  </div>
+  <script>
+        const defaultConfig = {
+            app_title: "ระบบจัดการคะแนน",
+            menu_1: "ส่งคะแนน",
+            menu_2: "สรุปคะแนน", 
+            menu_3: "เลือกเลข",
+            menu_4: "ค้นหาผู้โชคดี",
+            primary_color: "#ffffff",
+            font_family: "Segoe UI",
+            font_size: 16
+        };
+
+        let config = { ...defaultConfig };
+
+        async function render(newConfig) {
+            config = { ...config, ...newConfig };
+            
+            // Update text content
+            const titleElement = document.getElementById('appTitle');
+            const menu1Element = document.getElementById('menu1Text');
+            const menu2Element = document.getElementById('menu2Text');
+            const menu3Element = document.getElementById('menu3Text');
+            const menu4Element = document.getElementById('menu4Text');
+            
+            if (titleElement) {
+                titleElement.textContent = config.app_title || defaultConfig.app_title;
+            }
+            
+            if (menu1Element) {
+                menu1Element.textContent = config.menu_1 || defaultConfig.menu_1;
+            }
+            
+            if (menu2Element) {
+                menu2Element.textContent = config.menu_2 || defaultConfig.menu_2;
+            }
+            
+            if (menu3Element) {
+                menu3Element.textContent = config.menu_3 || defaultConfig.menu_3;
+            }
+            
+            if (menu4Element) {
+                menu4Element.textContent = config.menu_4 || defaultConfig.menu_4;
+            }
+
+            // Apply font family
+            const fontFamily = config.font_family || defaultConfig.font_family;
+            document.body.style.fontFamily = `'${fontFamily}', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif`;
+
+            // Apply font size scaling
+            const fontSize = config.font_size || defaultConfig.font_size;
+            if (titleElement) {
+                titleElement.style.fontSize = `${fontSize * 2}px`;
+            }
+
+            // Apply primary color to text elements
+            const primaryColor = config.primary_color || defaultConfig.primary_color;
+            if (titleElement) {
+                titleElement.style.color = primaryColor;
+            }
+        }
+
+        function mapToCapabilities(config) {
+            return {
+                recolorables: [
+                    {
+                        get: () => config.primary_color || defaultConfig.primary_color,
+                        set: (value) => {
+                            config.primary_color = value;
+                            if (window.elementSdk) {
+                                window.elementSdk.setConfig({ primary_color: value });
+                            }
+                        }
+                    }
+                ],
+                borderables: [],
+                fontEditable: {
+                    get: () => config.font_family || defaultConfig.font_family,
+                    set: (value) => {
+                        config.font_family = value;
+                        if (window.elementSdk) {
+                            window.elementSdk.setConfig({ font_family: value });
+                        }
+                    }
+                },
+                fontSizeable: {
+                    get: () => config.font_size || defaultConfig.font_size,
+                    set: (value) => {
+                        config.font_size = value;
+                        if (window.elementSdk) {
+                            window.elementSdk.setConfig({ font_size: value });
+                        }
+                    }
+                }
+            };
+        }
+
+        function mapToEditPanelValues(config) {
+            return new Map([
+                ["app_title", config.app_title || defaultConfig.app_title],
+                ["menu_1", config.menu_1 || defaultConfig.menu_1],
+                ["menu_2", config.menu_2 || defaultConfig.menu_2],
+                ["menu_3", config.menu_3 || defaultConfig.menu_3],
+                ["menu_4", config.menu_4 || defaultConfig.menu_4]
+            ]);
+        }
+
+        function selectMenu(menuNumber) {
+            const menuItems = document.querySelectorAll('.menu-item');
+            const selectedItem = menuItems[menuNumber - 1];
+            
+            // Add visual feedback
+            selectedItem.style.transform = 'translateY(-4px) scale(0.95)';
+            selectedItem.style.background = 'rgba(255, 255, 255, 0.2)';
+            
+            setTimeout(() => {
+                selectedItem.style.transform = 'translateY(-8px) scale(1.02)';
+                selectedItem.style.background = 'rgba(255, 255, 255, 0.1)';
+            }, 150);
+
+            // Navigate to different pages
+            if (menuNumber === 1) {
+                showScoreSubmissionPage();
+            } else if (menuNumber === 2) {
+                showScoreSummaryPage();
+            } else if (menuNumber === 3) {
+                showNumberSelectionPage();
+            } else if (menuNumber === 4) {
+                showWinnerSearchPage();
+            } else {
+                // Show selection feedback for other menus
+                const statusText = document.querySelector('.status-text');
+                const menuTexts = ['ส่งคะแนน', 'สรุปคะแนน', 'เลือกเลข', 'ค้นหาผู้โชคดี'];
+                const originalText = statusText.textContent;
+                
+                statusText.textContent = `เลือก: ${menuTexts[menuNumber - 1]}`;
+                statusText.style.color = '#4ade80';
+                
+                setTimeout(() => {
+                    statusText.textContent = originalText;
+                    statusText.style.color = '';
+                }, 2000);
+            }
+        }
+
+        function showScoreSubmissionPage() {
+            const container = document.querySelector('.container');
+            container.innerHTML = `
+                <div class="score-page">
+                    <div class="page-header">
+                        <button class="back-btn" onclick="showMainMenu()">← กลับ</button>
+                        <h1 class="page-title">ส่งคะแนน</h1>
+                    </div>
+                    
+                    <div class="score-form">
+                        <div class="form-group">
+                            <label class="form-label">ชื่อคนส่งคะแนน</label>
+                            <input type="text" id="memberName" class="form-input" placeholder="กรอกชื่อสมาชิก">
+                        </div>
+
+                        <div class="score-section">
+                            <h3 class="section-title">1. ปิดเคส (10 คะแนน/ครั้ง)</h3>
+                            <div class="form-group">
+                                <label class="form-label">จำนวนครั้ง</label>
+                                <input type="number" id="closeCase" class="form-input" min="0" value="0" onchange="calculateScores()">
+                                <span class="score-display" id="closeCaseScore">0 คะแนน</span>
+                            </div>
+                        </div>
+
+                        <div class="score-section">
+                            <h3 class="section-title">2. ไลฟ์สด</h3>
+                            <div class="live-row">
+                                <div class="live-item">
+                                    <label class="form-label">1 ชม. (4 คะแนน)</label>
+                                    <input type="number" id="live1h" class="form-input" min="0" value="0" onchange="calculateScores()">
+                                </div>
+                                <div class="live-item">
+                                    <label class="form-label">1.30 ชม. (6 คะแนน)</label>
+                                    <input type="number" id="live1h30" class="form-input" min="0" value="0" onchange="calculateScores()">
+                                </div>
+                            </div>
+                            <div class="live-row">
+                                <div class="live-item">
+                                    <label class="form-label">2 ชม. (8 คะแนน)</label>
+                                    <input type="number" id="live2h" class="form-input" min="0" value="0" onchange="calculateScores()">
+                                </div>
+                                <div class="live-item">
+                                    <label class="form-label">2.30 ชม. (10 คะแนน)</label>
+                                    <input type="number" id="live2h30" class="form-input" min="0" value="0" onchange="calculateScores()">
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">3 ชม. (12 คะแนน)</label>
+                                <input type="number" id="live3h" class="form-input" min="0" value="0" onchange="calculateScores()">
+                            </div>
+                            <span class="score-display" id="liveScore">0 คะแนน</span>
+                        </div>
+
+                        <div class="score-section">
+                            <h3 class="section-title">3. คอนเท้น</h3>
+                            <div class="content-row">
+                                <div class="content-item">
+                                    <label class="form-label">รูป+คลิปจากไลฟ์ (2 คะแนน)</label>
+                                    <input type="number" id="imageClip" class="form-input" min="0" value="0" onchange="calculateScores()">
+                                </div>
+                                <div class="content-item">
+                                    <label class="form-label">คลิปตัดต่อ (3 คะแนน)</label>
+                                    <input type="number" id="editClip" class="form-input" min="0" value="0" onchange="calculateScores()">
+                                </div>
+                            </div>
+                            <span class="score-display" id="contentScore">0 คะแนน</span>
+                        </div>
+
+                        <div class="score-section">
+                            <h3 class="section-title">4. จำนวนแชท (1 คะแนน/ครั้ง)</h3>
+                            <div class="form-group">
+                                <label class="form-label">จำนวนแชท</label>
+                                <input type="number" id="chatCount" class="form-input" min="0" value="0" onchange="calculateScores()">
+                                <span class="score-display" id="chatScore">0 คะแนน</span>
+                            </div>
+                        </div>
+
+                        <div class="total-score">
+                            <h2 class="total-title">รวมคะแนนทั้งหมด: <span id="totalScore">0</span> คะแนน</h2>
+                        </div>
+
+                        <button class="submit-btn" onclick="submitScoreData()">ส่งข้อมูลทั้งหมด</button>
+                    </div>
+                </div>
+
+                <div id="notification" class="notification hidden">
+                    <div class="notification-content">
+                        <span id="notificationText"></span>
+                        <button onclick="hideNotification()" class="notification-close">×</button>
+                    </div>
+                </div>
+            `;
+        }
+
+        function showMainMenu() {
+            location.reload();
+        }
+
+        function calculateScores() {
+            // Calculate close case score
+            const closeCase = parseInt(document.getElementById('closeCase').value) || 0;
+            const closeCaseScore = closeCase * 10;
+            document.getElementById('closeCaseScore').textContent = `${closeCaseScore} คะแนน`;
+
+            // Calculate live score
+            const live1h = parseInt(document.getElementById('live1h').value) || 0;
+            const live1h30 = parseInt(document.getElementById('live1h30').value) || 0;
+            const live2h = parseInt(document.getElementById('live2h').value) || 0;
+            const live2h30 = parseInt(document.getElementById('live2h30').value) || 0;
+            const live3h = parseInt(document.getElementById('live3h').value) || 0;
+            
+            const liveScore = (live1h * 4) + (live1h30 * 6) + (live2h * 8) + (live2h30 * 10) + (live3h * 12);
+            document.getElementById('liveScore').textContent = `${liveScore} คะแนน`;
+
+            // Calculate content score
+            const imageClip = parseInt(document.getElementById('imageClip').value) || 0;
+            const editClip = parseInt(document.getElementById('editClip').value) || 0;
+            const contentScore = (imageClip * 2) + (editClip * 3);
+            document.getElementById('contentScore').textContent = `${contentScore} คะแนน`;
+
+            // Calculate chat score
+            const chatCount = parseInt(document.getElementById('chatCount').value) || 0;
+            const chatScore = chatCount * 1;
+            document.getElementById('chatScore').textContent = `${chatScore} คะแนน`;
+
+            // Calculate total score
+            const totalScore = closeCaseScore + liveScore + contentScore + chatScore;
+            document.getElementById('totalScore').textContent = totalScore;
+        }
+
+        // JSONP callback function
+        function handleGoogleSheetsResponse(response) {
+            if (response.success) {
+                Swal.fire({
+                    icon: 'success',
+                    title: 'บันทึกสำเร็จ!',
+                    text: `บันทึกข้อมูลของ ${response.memberName} เรียบร้อยแล้ว! คะแนนรวม: ${response.totalScore} คะแนน`,
+                    confirmButtonText: 'ตกลง',
+                    background: 'rgba(17, 153, 142, 0.95)',
+                    color: 'white',
+                    confirmButtonColor: '#4ade80'
+                }).then(() => {
+                    // Reset form
+                    document.getElementById('memberName').value = '';
+                    document.querySelectorAll('input[type="number"]').forEach(input => input.value = '0');
+                    calculateScores();
+                });
+            } else {
+                Swal.fire({
+                    icon: 'error',
+                    title: 'เกิดข้อผิดพลาด!',
+                    text: response.message || 'ไม่สามารถบันทึกข้อมูลได้',
+                    confirmButtonText: 'ตกลง',
+                    background: 'rgba(17, 153, 142, 0.95)',
+                    color: 'white',
+                    confirmButtonColor: '#ef4444'
+                });
+            }
+        }
+
+        function submitScoreData() {
+            const memberName = document.getElementById('memberName').value.trim();
+            
+            if (!memberName) {
+                Swal.fire({
+                    icon: 'warning',
+                    title: 'ข้อมูลไม่ครบ!',
+                    text: 'กรุณากรอกชื่อสมาชิก',
+                    confirmButtonText: 'ตกลง',
+                    background: 'rgba(17, 153, 142, 0.95)',
+                    color: 'white',
+                    confirmButtonColor: '#f59e0b'
+                });
+                return;
+            }
+
+            // Collect all data
+            const newScoreData = {
+                memberName: memberName,
+                closeCase: parseInt(document.getElementById('closeCase').value) || 0,
+                closeCaseScore: (parseInt(document.getElementById('closeCase').value) || 0) * 10,
+                live1h: parseInt(document.getElementById('live1h').value) || 0,
+                live1h30: parseInt(document.getElementById('live1h30').value) || 0,
+                live2h: parseInt(document.getElementById('live2h').value) || 0,
+                live2h30: parseInt(document.getElementById('live2h30').value) || 0,
+                live3h: parseInt(document.getElementById('live3h').value) || 0,
+                liveScore: (parseInt(document.getElementById('live1h').value) || 0) * 4 + 
+                          (parseInt(document.getElementById('live1h30').value) || 0) * 6 + 
+                          (parseInt(document.getElementById('live2h').value) || 0) * 8 + 
+                          (parseInt(document.getElementById('live2h30').value) || 0) * 10 + 
+                          (parseInt(document.getElementById('live3h').value) || 0) * 12,
+                imageClip: parseInt(document.getElementById('imageClip').value) || 0,
+                editClip: parseInt(document.getElementById('editClip').value) || 0,
+                contentScore: (parseInt(document.getElementById('imageClip').value) || 0) * 2 + 
+                             (parseInt(document.getElementById('editClip').value) || 0) * 3,
+                chatCount: parseInt(document.getElementById('chatCount').value) || 0,
+                chatScore: (parseInt(document.getElementById('chatCount').value) || 0) * 1,
+                totalScore: parseInt(document.getElementById('totalScore').textContent),
+                timestamp: new Date().toISOString(),
+                type: 'score'
+            };
+
+            // Save to localStorage first
+            scoreData.push(newScoreData);
+            saveToLocalStorage('scoreData', scoreData);
+
+            // Show loading alert
+            Swal.fire({
+                title: 'กำลังบันทึกข้อมูล...',
+                text: 'กรุณารอสักครู่',
+                allowOutsideClick: false,
+                allowEscapeKey: false,
+                showConfirmButton: false,
+                background: 'rgba(17, 153, 142, 0.95)',
+                color: 'white',
+                didOpen: () => {
+                    Swal.showLoading();
+                }
+            });
+
+            // Send to Google Sheets using JSONP
+            const script = document.createElement('script');
+            const callbackName = 'callback_' + Date.now();
+            
+            // Create global callback function
+            window[callbackName] = function(response) {
+                handleGoogleSheetsResponse(response);
+                // Clean up
+                document.head.removeChild(script);
+                delete window[callbackName];
+            };
+
+            // Build query string with sheet specification
+            const params = new URLSearchParams({
+                ...newScoreData,
+                sheet: 'Sheet1', // Specify Sheet1 for score data
+                callback: callbackName
+            });
+
+            script.src = `${GOOGLE_SCRIPT_URL}?${params.toString()}`;
+            script.onerror = function() {
+                Swal.fire({
+                    icon: 'error',
+                    title: 'เกิดข้อผิดพลาด!',
+                    text: 'ไม่สามารถเชื่อมต่อกับ Google Sheets ได้ แต่ข้อมูลได้บันทึกในเครื่องแล้ว',
+                    confirmButtonText: 'ตกลง',
+                    background: 'rgba(17, 153, 142, 0.95)',
+                    color: 'white',
+                    confirmButtonColor: '#ef4444'
+                });
+                // Clean up
+                document.head.removeChild(script);
+                delete window[callbackName];
+            };
+
+            document.head.appendChild(script);
+        }
+
+        function showNotification(message, type) {
+            const notification = document.getElementById('notification');
+            const notificationText = document.getElementById('notificationText');
+            
+            notificationText.textContent = message;
+            notification.className = `notification ${type}`;
+            
+            if (type !== 'loading') {
+                setTimeout(() => {
+                    hideNotification();
+                }, 4000);
+            }
+        }
+
+        function hideNotification() {
+            const notification = document.getElementById('notification');
+            notification.className = 'notification hidden';
+        }
+
+        function showScoreSummaryPage() {
+            const container = document.querySelector('.container');
+            container.innerHTML = `
+                <div class="summary-page">
+                    <div class="page-header">
+                        <button class="back-btn" onclick="showMainMenu()">← กลับ</button>
+                        <h1 class="page-title">สรุปคะแนน</h1>
+                    </div>
+                    
+                    <div class="search-section">
+                        <h3 class="section-title">ค้นหาข้อมูลตามช่วงวันที่</h3>
+                        <div class="date-range">
+                            <div class="date-input-group">
+                                <label class="form-label">จากวันที่</label>
+                                <input type="date" id="startDate" class="date-input">
+                            </div>
+                            <div class="date-separator">ถึง</div>
+                            <div class="date-input-group">
+                                <label class="form-label">ถึงวันที่</label>
+                                <input type="date" id="endDate" class="date-input">
+                            </div>
+                        </div>
+                        <button class="search-btn" onclick="searchScoreData()">🔍 ค้นหาข้อมูล</button>
+                    </div>
+
+                    <div id="tabsSection" class="tabs-section" style="display: none;">
+                        <div class="tab-menu">
+                            <button class="tab-btn active" onclick="switchTab('summary')">📋 สรุปคะแนนรวม</button>
+                            <button class="tab-btn" onclick="switchTab('rankings')">🏆 สรุปอันดับ</button>
+                        </div>
+
+                        <div id="summaryTab" class="tab-content active">
+                            <div id="summaryTableSection" class="summary-table">
+                                <h3 class="table-title">📋 ตารางสรุปคะแนนรวม</h3>
+                                <div id="summaryTableContainer"></div>
+                            </div>
+                        </div>
+
+                        <div id="rankingsTab" class="tab-content">
+                            <div id="rankingsSection" class="rankings-grid">
+                                <div class="ranking-card">
+                                    <h3 class="ranking-title">🏆 อันดับปิดเคส</h3>
+                                    <div id="closeCaseRanking"></div>
+                                </div>
+                                
+                                <div class="ranking-card">
+                                    <h3 class="ranking-title">📺 อันดับไลฟ์สด</h3>
+                                    <div id="liveRanking"></div>
+                                </div>
+                                
+                                <div class="ranking-card">
+                                    <h3 class="ranking-title">📱 อันดับคอนเท้น</h3>
+                                    <div id="contentRanking"></div>
+                                </div>
+                                
+                                <div class="ranking-card">
+                                    <h3 class="ranking-title">💬 อันดับจำนวนแชท</h3>
+                                    <div id="chatRanking"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="notification" class="notification hidden">
+                    <div class="notification-content">
+                        <span id="notificationText"></span>
+                        <button onclick="hideNotification()" class="notification-close">×</button>
+                    </div>
+                </div>
+            `;
+
+            // Set default dates (last 7 days)
+            const today = new Date();
+            const lastWeek = new Date(today);
+            lastWeek.setDate(today.getDate() - 7);
+            
+            document.getElementById('startDate').value = lastWeek.toISOString().split('T')[0];
+            document.getElementById('endDate').value = today.toISOString().split('T')[0];
+        }
+
+        // Google Apps Script URL
+        const GOOGLE_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbx2Mk1JgpdW_ob-zp2QgUq3dbijn8NAIYKmeRAENmv7jShDAM8wvInKHB-X9uEWRguWTA/exec';
         
-        // Clean up the script tag and the dynamic function
-        const scriptTag = document.getElementById(scriptId);
-        if (scriptTag) {
-            document.body.removeChild(scriptTag);
+        // Local Storage functions
+        function saveToLocalStorage(key, data) {
+            try {
+                localStorage.setItem(key, JSON.stringify(data));
+                return true;
+            } catch (error) {
+                console.error('Error saving to localStorage:', error);
+                return false;
+            }
         }
-        delete window[callbackName];
-    };
+
+        function loadFromLocalStorage(key) {
+            try {
+                const data = localStorage.getItem(key);
+                return data ? JSON.parse(data) : null;
+            } catch (error) {
+                console.error('Error loading from localStorage:', error);
+                return null;
+            }
+        }
+
+        // Global data storage
+        let scoreData = loadFromLocalStorage('scoreData') || [];
+        let numberSelectionData = loadFromLocalStorage('numberSelectionData') || [];
+
+        // Function to load score data specifically from Google Sheets Sheet1
+        function loadScoreDataFromSheet1() {
+            return new Promise((resolve, reject) => {
+                Swal.fire({
+                    title: 'กำลังโหลดข้อมูลคะแนนจาก Google Sheets...',
+                    text: 'กรุณารอสักครู่',
+                    allowOutsideClick: false,
+                    allowEscapeKey: false,
+                    showConfirmButton: false,
+                    background: 'rgba(17, 153, 142, 0.95)',
+                    color: 'white',
+                    didOpen: () => {
+                        Swal.showLoading();
+                    }
+                });
+
+                const script = document.createElement('script');
+                const callbackName = 'loadScoreCallback_' + Date.now();
+                
+                // Create global callback function
+                window[callbackName] = function(response) {
+                    Swal.close();
+                    if (response.success && response.data) {
+                        // Filter only score data from Sheet1
+                        const sheetScoreData = response.data.filter(item => item.type === 'score' || !item.type);
+                        
+                        // Update local score data
+                        scoreData = [...sheetScoreData];
+                        saveToLocalStorage('scoreData', scoreData);
+                        
+                        resolve(sheetScoreData);
+                    } else {
+                        reject(new Error(response.message || 'ไม่สามารถโหลดข้อมูลคะแนนได้'));
+                    }
+                    
+                    // Clean up
+                    document.head.removeChild(script);
+                    delete window[callbackName];
+                };
+
+                // Build query string for loading data from Sheet1 only
+                const params = new URLSearchParams({
+                    action: 'load',
+                    loadSheet1Only: 'true', // Load data from Sheet1 only
+                    callback: callbackName
+                });
+
+                script.src = `${GOOGLE_SCRIPT_URL}?${params.toString()}`;
+                script.onerror = function() {
+                    Swal.close();
+                    reject(new Error('ไม่สามารถเชื่อมต่อกับ Google Sheets ได้'));
+                    // Clean up
+                    document.head.removeChild(script);
+                    delete window[callbackName];
+                };
+
+                document.head.appendChild(script);
+            });
+        }
+
+        // Function to load number selection data specifically from Google Sheets Sheet2
+        function loadNumberDataFromSheet2() {
+            return new Promise((resolve, reject) => {
+                const script = document.createElement('script');
+                const callbackName = 'loadNumberCallback_' + Date.now();
+                
+                // Create global callback function
+                window[callbackName] = function(response) {
+                    if (response.success && response.data) {
+                        // Filter only number selection data from Sheet2
+                        const sheetNumberData = response.data.filter(item => item.type === 'number');
+                        
+                        // Update local number selection data
+                        numberSelectionData = [...sheetNumberData];
+                        allSelections = [...sheetNumberData];
+                        saveToLocalStorage('numberSelectionData', numberSelectionData);
+                        
+                        resolve(sheetNumberData);
+                    } else {
+                        reject(new Error(response.message || 'ไม่สามารถโหลดข้อมูลการเลือกเลขได้'));
+                    }
+                    
+                    // Clean up
+                    document.head.removeChild(script);
+                    delete window[callbackName];
+                };
+
+                // Build query string for loading data from Sheet2 only
+                const params = new URLSearchParams({
+                    action: 'load',
+                    loadSheet2Only: 'true', // Load data from Sheet2 only
+                    callback: callbackName
+                });
+
+                script.src = `${GOOGLE_SCRIPT_URL}?${params.toString()}`;
+                script.onerror = function() {
+                    reject(new Error('ไม่สามารถเชื่อมต่อกับ Google Sheets ได้'));
+                    // Clean up
+                    document.head.removeChild(script);
+                    delete window[callbackName];
+                };
+
+                document.head.appendChild(script);
+            });
+        }
+
+        // Function to load data from all Google Sheets for winner search
+        function loadAllSheetsData() {
+            return new Promise((resolve, reject) => {
+                const script = document.createElement('script');
+                const callbackName = 'loadAllSheetsCallback_' + Date.now();
+                
+                // Create global callback function
+                window[callbackName] = function(response) {
+                    if (response.success && response.data) {
+                        // Get all data from all sheets
+                        const allData = response.data;
+                        
+                        resolve(allData);
+                    } else {
+                        reject(new Error(response.message || 'ไม่สามารถโหลดข้อมูลจาก Google Sheets ได้'));
+                    }
+                    
+                    // Clean up
+                    document.head.removeChild(script);
+                    delete window[callbackName];
+                };
+
+                // Build query string for loading data from all sheets
+                const params = new URLSearchParams({
+                    action: 'load',
+                    loadAllSheets: 'true', // Load data from all sheets
+                    callback: callbackName
+                });
+
+                script.src = `${GOOGLE_SCRIPT_URL}?${params.toString()}`;
+                script.onerror = function() {
+                    reject(new Error('ไม่สามารถเชื่อมต่อกับ Google Sheets ได้'));
+                    // Clean up
+                    document.head.removeChild(script);
+                    delete window[callbackName];
+                };
+
+                document.head.appendChild(script);
+            });
+        }
+
+        // Sample data for demonstration (merged with localStorage data)
+        const sampleScoreData = [
+            { memberName: "สมชาย", closeCase: 5, closeCaseScore: 50, liveScore: 24, contentScore: 8, chatScore: 15, totalScore: 97, timestamp: "2024-01-15T10:30:00.000Z" },
+            { memberName: "สมหญิง", closeCase: 3, closeCaseScore: 30, liveScore: 16, contentScore: 6, chatScore: 12, totalScore: 64, timestamp: "2024-01-15T14:20:00.000Z" },
+            { memberName: "สมศักดิ์", closeCase: 2, closeCaseScore: 20, liveScore: 12, contentScore: 4, chatScore: 8, totalScore: 44, timestamp: "2024-01-16T09:15:00.000Z" },
+            { memberName: "สมใจ", closeCase: 1, closeCaseScore: 10, liveScore: 8, contentScore: 2, chatScore: 5, totalScore: 25, timestamp: "2024-01-16T16:45:00.000Z" },
+            { memberName: "สมปอง", closeCase: 0, closeCaseScore: 0, liveScore: 4, contentScore: 2, chatScore: 3, totalScore: 9, timestamp: "2024-01-17T11:30:00.000Z" },
+            { memberName: "สมชาย", closeCase: 2, closeCaseScore: 20, liveScore: 8, contentScore: 4, chatScore: 6, totalScore: 38, timestamp: "2024-01-17T15:20:00.000Z" },
+            { memberName: "สมหญิง", closeCase: 1, closeCaseScore: 10, liveScore: 6, contentScore: 2, chatScore: 4, totalScore: 22, timestamp: "2024-01-18T13:10:00.000Z" },
+            { memberName: "สมดี", closeCase: 0, closeCaseScore: 0, liveScore: 2, contentScore: 1, chatScore: 2, totalScore: 5, timestamp: "2024-01-18T17:30:00.000Z" }
+        ];
+
+        // Initialize data if localStorage is empty
+        if (scoreData.length === 0) {
+            scoreData = [...sampleScoreData];
+            saveToLocalStorage('scoreData', scoreData);
+        }
+
+        // Function to load data from Google Sheets
+        function loadDataFromGoogleSheets() {
+            return new Promise((resolve, reject) => {
+                Swal.fire({
+                    title: 'กำลังโหลดข้อมูล...',
+                    text: 'กรุณารอสักครู่',
+                    allowOutsideClick: false,
+                    allowEscapeKey: false,
+                    showConfirmButton: false,
+                    background: 'rgba(17, 153, 142, 0.95)',
+                    color: 'white',
+                    didOpen: () => {
+                        Swal.showLoading();
+                    }
+                });
+
+                const script = document.createElement('script');
+                const callbackName = 'loadCallback_' + Date.now();
+                
+                // Create global callback function
+                window[callbackName] = function(response) {
+                    Swal.close();
+                    if (response.success && response.data) {
+                        // Update local data with Google Sheets data
+                        scoreData = response.data.filter(item => item.type === 'score' || !item.type);
+                        numberSelectionData = response.data.filter(item => item.type === 'number');
+                        
+                        // Save to localStorage
+                        saveToLocalStorage('scoreData', scoreData);
+                        saveToLocalStorage('numberSelectionData', numberSelectionData);
+                        
+                        resolve(response.data);
+                    } else {
+                        reject(new Error(response.message || 'ไม่สามารถโหลดข้อมูลได้'));
+                    }
+                    
+                    // Clean up
+                    document.head.removeChild(script);
+                    delete window[callbackName];
+                };
+
+                // Build query string for loading data from both sheets
+                const params = new URLSearchParams({
+                    action: 'load',
+                    loadBothSheets: 'true', // Load data from both Sheet1 and Sheet2
+                    callback: callbackName
+                });
+
+                script.src = `${GOOGLE_SCRIPT_URL}?${params.toString()}`;
+                script.onerror = function() {
+                    Swal.close();
+                    reject(new Error('ไม่สามารถเชื่อมต่อกับ Google Sheets ได้'));
+                    // Clean up
+                    document.head.removeChild(script);
+                    delete window[callbackName];
+                };
+
+                document.head.appendChild(script);
+            });
+        }
+
+        function searchScoreData() {
+            const startDate = document.getElementById('startDate').value;
+            const endDate = document.getElementById('endDate').value;
+            
+            if (!startDate || !endDate) {
+                Swal.fire({
+                    icon: 'warning',
+                    title: 'ข้อมูลไม่ครบ!',
+                    text: 'กรุณาเลือกช่วงวันที่',
+                    confirmButtonText: 'ตกลง',
+                    background: 'rgba(17, 153, 142, 0.95)',
+                    color: 'white',
+                    confirmButtonColor: '#f59e0b'
+                });
+                return;
+            }
+
+            if (new Date(startDate) > new Date(endDate)) {
+                Swal.fire({
+                    icon: 'warning',
+                    title: 'ข้อมูลไม่ถูกต้อง!',
+                    text: 'วันที่เริ่มต้นต้องไม่เกินวันที่สิ้นสุด',
+                    confirmButtonText: 'ตกลง',
+                    background: 'rgba(17, 153, 142, 0.95)',
+                    color: 'white',
+                    confirmButtonColor: '#f59e0b'
+                });
+                return;
+            }
+
+            // Show loading message
+            Swal.fire({
+                title: 'กำลังค้นหาข้อมูล...',
+                text: 'กรุณารอสักครู่',
+                allowOutsideClick: false,
+                allowEscapeKey: false,
+                showConfirmButton: false,
+                background: 'rgba(17, 153, 142, 0.95)',
+                color: 'white',
+                didOpen: () => {
+                    Swal.showLoading();
+                }
+            });
+
+            // Use local data for search (no Google Sheets interaction)
+            setTimeout(() => {
+                const filteredData = filterDataByDateRange(scoreData, startDate, endDate);
+                displaySearchResults(filteredData);
+                
+                Swal.fire({
+                    icon: 'success',
+                    title: 'ค้นหาเสร็จสิ้น!',
+                    text: `พบข้อมูลคะแนน ${filteredData.length} รายการ`,
+                    confirmButtonText: 'ตกลง',
+                    background: 'rgba(17, 153, 142, 0.95)',
+                    color: 'white',
+                    confirmButtonColor: '#4ade80'
+                });
+            }, 500);
+        }
+
+        function filterDataByDateRange(data, startDate, endDate) {
+            const start = new Date(startDate);
+            const end = new Date(endDate);
+            end.setHours(23, 59, 59, 999); // Include the entire end date
+            
+            return data.filter(item => {
+                const itemDate = new Date(item.timestamp);
+                return itemDate >= start && itemDate <= end;
+            });
+        }
+
+        function displaySearchResults(data) {
+            if (data.length === 0) {
+                document.getElementById('tabsSection').style.display = 'block';
+                document.getElementById('summaryTableContainer').innerHTML = '<div class="no-data">ไม่พบข้อมูลในช่วงวันที่ที่เลือก</div>';
+                return;
+            }
+
+            // Aggregate data by member name
+            const aggregatedData = aggregateDataByMember(data);
+            
+            // Display rankings
+            displayRankings(aggregatedData);
+            
+            // Display summary table
+            displaySummaryTable(aggregatedData);
+            
+            // Show tabs section
+            document.getElementById('tabsSection').style.display = 'block';
+        }
+
+        function aggregateDataByMember(data) {
+            const memberMap = new Map();
+            
+            data.forEach(item => {
+                const name = item.memberName;
+                if (memberMap.has(name)) {
+                    const existing = memberMap.get(name);
+                    existing.closeCase += item.closeCase;
+                    existing.closeCaseScore += item.closeCaseScore;
+                    existing.liveScore += item.liveScore;
+                    existing.contentScore += item.contentScore;
+                    existing.chatScore += item.chatScore;
+                    existing.totalScore += item.totalScore;
+                } else {
+                    memberMap.set(name, { ...item });
+                }
+            });
+            
+            return Array.from(memberMap.values());
+        }
+
+        function displayRankings(data) {
+            const categories = [
+                { id: 'closeCaseRanking', field: 'closeCaseScore', suffix: 'คะแนน' },
+                { id: 'liveRanking', field: 'liveScore', suffix: 'คะแนน' },
+                { id: 'contentRanking', field: 'contentScore', suffix: 'คะแนน' },
+                { id: 'chatRanking', field: 'chatScore', suffix: 'คะแนน' }
+            ];
+
+            categories.forEach(category => {
+                const sortedData = [...data].sort((a, b) => b[category.field] - a[category.field]);
+                const top3 = sortedData.slice(0, 3);
+                
+                const container = document.getElementById(category.id);
+                container.innerHTML = '';
+                
+                if (top3.length === 0) {
+                    container.innerHTML = '<div class="no-data">ไม่มีข้อมูล</div>';
+                    return;
+                }
+                
+                const medals = ['🥇', '🥈', '🥉'];
+                const classes = ['first', 'second', 'third'];
+                
+                top3.forEach((item, index) => {
+                    const rankingItem = document.createElement('div');
+                    rankingItem.className = `ranking-item ${classes[index]}`;
+                    rankingItem.innerHTML = `
+                        <div class="ranking-position">
+                            <span class="medal">${medals[index]}</span>
+                            <span>${index + 1}</span>
+                        </div>
+                        <span class="ranking-name">${item.memberName}</span>
+                        <span class="ranking-score">${item[category.field]} ${category.suffix}</span>
+                    `;
+                    container.appendChild(rankingItem);
+                });
+            });
+        }
 
 
-    document.body.appendChild(script);
-}
+
+        function displaySummaryTable(data) {
+            const container = document.getElementById('summaryTableContainer');
+            
+            if (data.length === 0) {
+                container.innerHTML = '<div class="no-data">ไม่มีข้อมูล</div>';
+                return;
+            }
+            
+            // Sort by total score descending
+            const sortedData = [...data].sort((a, b) => b.totalScore - a.totalScore);
+            
+            // Calculate totals
+            const totals = {
+                memberName: 'รวมทั้งหมด',
+                closeCase: sortedData.reduce((sum, item) => sum + item.closeCase, 0),
+                closeCaseScore: sortedData.reduce((sum, item) => sum + item.closeCaseScore, 0),
+                liveScore: sortedData.reduce((sum, item) => sum + item.liveScore, 0),
+                contentScore: sortedData.reduce((sum, item) => sum + item.contentScore, 0),
+                chatScore: sortedData.reduce((sum, item) => sum + item.chatScore, 0),
+                totalScore: sortedData.reduce((sum, item) => sum + item.totalScore, 0)
+            };
+            
+            let tableHTML = `
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>ชื่อสมาชิก</th>
+                            <th>ปิดเคส</th>
+                            <th>คะแนนปิดเคส</th>
+                            <th>คะแนนไลฟ์สด</th>
+                            <th>คะแนนคอนเท้น</th>
+                            <th>คะแนนแชท</th>
+                            <th>รวมคะแนน</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+            `;
+            
+            sortedData.forEach(item => {
+                const isLowScore = item.totalScore < 25;
+                const rowClass = isLowScore ? 'low-score-row' : '';
+                const totalScoreClass = isLowScore ? 'total-score-cell' : '';
+                
+                tableHTML += `
+                    <tr class="${rowClass}">
+                        <td>${item.memberName}</td>
+                        <td>${item.closeCase}</td>
+                        <td>${item.closeCaseScore}</td>
+                        <td>${item.liveScore}</td>
+                        <td>${item.contentScore}</td>
+                        <td>${item.chatScore}</td>
+                        <td class="${totalScoreClass}"><strong>${item.totalScore}</strong></td>
+                    </tr>
+                `;
+            });
+            
+            tableHTML += `
+                    <tr class="total-row">
+                        <td><strong>${totals.memberName}</strong></td>
+                        <td><strong>${totals.closeCase}</strong></td>
+                        <td><strong>${totals.closeCaseScore}</strong></td>
+                        <td><strong>${totals.liveScore}</strong></td>
+                        <td><strong>${totals.contentScore}</strong></td>
+                        <td><strong>${totals.chatScore}</strong></td>
+                        <td><strong>${totals.totalScore}</strong></td>
+                    </tr>
+                </tbody>
+                </table>
+            `;
+            
+            container.innerHTML = tableHTML;
+        }
+
+        function showNumberSelectionPage() {
+            const container = document.querySelector('.container');
+            container.innerHTML = `
+                <div class="number-page">
+                    <div class="page-header">
+                        <button class="back-btn" onclick="showMainMenu()">← กลับ</button>
+                        <h1 class="page-title">เลือกเลข</h1>
+                    </div>
+                    
+                    <div class="selection-header">
+                        <h2 class="selection-title">เลือกเลขที่ชอบ ลุ้นหวยเลขท้าย</h2>
+                        
+                        <div class="period-section">
+                            <div class="period-group">
+                                <label class="period-label">ชื่อ:</label>
+                                <input type="text" id="userName" class="period-input" placeholder="กรอกชื่อของคุณ">
+                            </div>
+                            <div class="period-group">
+                                <label class="period-label">ประจำงวดวันที่:</label>
+                                <select id="periodSelect" class="period-select" onchange="updatePeriod()">
+                                    <option value="1" style="color: #22c55e;">1</option>
+                                    <option value="16" style="color: #22c55e;">16</option>
+                                </select>
+                            </div>
+                        </div>
+                        
+                        <div class="selected-numbers">
+                            <div class="selected-label">เลขที่เลือก:</div>
+                            <div id="selectedDisplay" class="selected-display">
+                                ยังไม่ได้เลือกเลข
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="navigator-controls-section">
+                        <div class="navigator-section">
+                            <button class="nav-btn" id="prevBtn" onclick="previousSheet()" disabled>← ก่อนหน้า</button>
+                            <div class="sheet-numbers" id="sheetNumbers"></div>
+                            <button class="nav-btn" id="nextBtn" onclick="nextSheet()">ถัดไป →</button>
+                        </div>
+                        <div class="controls-section">
+                            <button class="control-btn save-btn" onclick="saveSelections()">💾 บันทึกข้อมูล</button>
+                            <button class="control-btn new-sheet-btn" onclick="createNewSheet()">📄 เพิ่มใบใหม่</button>
+                            <button class="control-btn update-btn" onclick="updateData()">🔄 อัพเดทข้อมูล</button>
+                        </div>
+                    </div>
+
+                    <div class="numbers-grid">
+                        <div id="numbersContainer" class="grid-container"></div>
+                    </div>
+
+                    <div class="selections-table">
+                        <h3 class="selections-title">📋 ข้อมูลการเลือกเลข</h3>
+                        <div id="selectionsTableContainer"></div>
+                    </div>
+                </div>
+
+                <div id="notification" class="notification hidden">
+                    <div class="notification-content">
+                        <span id="notificationText"></span>
+                        <button onclick="hideNotification()" class="notification-close">×</button>
+                    </div>
+                </div>
+            `;
+
+            // Initialize number selection system
+            initializeNumberSelection();
+        }
+
+        // Number selection system variables
+        let currentSheet = 1;
+        let totalSheets = 1;
+        let selectedNumbers = new Set();
+        let takenNumbers = new Set();
+        let allSelections = [];
+        let sheetSelections = new Map(); // Store selections for each sheet
+
+        // Sample data for demonstration
+        const sampleSelectionData = [
+            { name: "สมศักดิ์", numbers: "11, 28, 45", period: "16", sheet: 1, type: "number", timestamp: "2024-01-16T09:15:00.000Z" },
+            { name: "สมปอง", numbers: "09, 27, 67", period: "16", sheet: 2, type: "number", timestamp: "2024-01-17T11:30:00.000Z" }
+        ];
+
+        function initializeNumberSelection() {
+            // Initialize with localStorage data or sample data
+            if (numberSelectionData.length === 0) {
+                numberSelectionData = [...sampleSelectionData];
+                saveToLocalStorage('numberSelectionData', numberSelectionData);
+            }
+            allSelections = [...numberSelectionData];
+            
+            // Extract taken numbers for current sheet and period
+            updateTakenNumbers();
+            
+            // Create number grid
+            createNumberGrid();
+            
+            // Update navigator
+            updateNavigator();
+            
+            // Display selections table
+            displaySelectionsTable();
+            
+            // Load saved selections for current sheet
+            loadSheetSelections();
+        }
+
+        function createNumberGrid() {
+            const container = document.getElementById('numbersContainer');
+            container.innerHTML = '';
+            
+            for (let i = 0; i <= 99; i++) {
+                const numberStr = i.toString().padStart(2, '0');
+                const cell = document.createElement('div');
+                cell.className = 'number-cell';
+                cell.textContent = numberStr;
+                cell.onclick = () => toggleNumber(numberStr);
+                
+                // Set initial state
+                updateCellState(cell, numberStr);
+                
+                container.appendChild(cell);
+            }
+        }
+
+        function updateCellState(cell, numberStr) {
+            const isSelected = selectedNumbers.has(numberStr);
+            const isTaken = takenNumbers.has(numberStr);
+            
+            cell.className = 'number-cell';
+            
+            if (isTaken && !isSelected) {
+                cell.classList.add('taken');
+            } else if (isSelected) {
+                cell.classList.add('selected');
+            } else {
+                cell.classList.add('available');
+            }
+        }
+
+        function toggleNumber(numberStr) {
+            const period = document.getElementById('periodSelect').value;
+            const isTaken = takenNumbers.has(numberStr);
+            
+            // Check if number is already taken by someone else
+            if (isTaken && !selectedNumbers.has(numberStr)) {
+                showNotification(`เลข ${numberStr} ถูกเลือกไปแล้ว`, 'error');
+                return;
+            }
+            
+            // Toggle selection
+            if (selectedNumbers.has(numberStr)) {
+                selectedNumbers.delete(numberStr);
+            } else {
+                selectedNumbers.add(numberStr);
+            }
+            
+            // Update display
+            updateSelectedDisplay();
+            updateNumberGrid();
+            
+            // Save to sheet selections
+            sheetSelections.set(currentSheet, {
+                numbers: new Set(selectedNumbers),
+                period: period
+            });
+        }
+
+        function updateSelectedDisplay() {
+            const display = document.getElementById('selectedDisplay');
+            
+            if (selectedNumbers.size === 0) {
+                display.innerHTML = 'ยังไม่ได้เลือกเลข';
+                display.style.color = 'rgba(255, 255, 255, 0.6)';
+            } else {
+                const numbersArray = Array.from(selectedNumbers).sort();
+                display.innerHTML = numbersArray.map(num => 
+                    `<span class="selected-number">${num}</span>`
+                ).join('');
+                display.style.color = '#4ade80';
+            }
+        }
+
+        function updateNumberGrid() {
+            const cells = document.querySelectorAll('.number-cell');
+            cells.forEach(cell => {
+                const numberStr = cell.textContent;
+                updateCellState(cell, numberStr);
+            });
+        }
+
+        function updateTakenNumbers() {
+            const period = document.getElementById('periodSelect').value;
+            takenNumbers.clear();
+            
+            // Get taken numbers from all selections for current period and sheet
+            allSelections.forEach(selection => {
+                if (selection.period === period && selection.sheet === currentSheet) {
+                    const numbers = selection.numbers.split(', ');
+                    numbers.forEach(num => takenNumbers.add(num));
+                }
+            });
+        }
+
+        function updatePeriod() {
+            updateTakenNumbers();
+            updateNumberGrid();
+            displaySelectionsTable();
+        }
+
+        function updateNavigator() {
+            const container = document.getElementById('sheetNumbers');
+            const prevBtn = document.getElementById('prevBtn');
+            const nextBtn = document.getElementById('nextBtn');
+            
+            container.innerHTML = '';
+            
+            for (let i = 1; i <= totalSheets; i++) {
+                const sheetBtn = document.createElement('button');
+                sheetBtn.className = 'sheet-number';
+                sheetBtn.textContent = i;
+                sheetBtn.onclick = () => switchToSheet(i);
+                
+                if (i === currentSheet) {
+                    sheetBtn.classList.add('active');
+                }
+                
+                container.appendChild(sheetBtn);
+            }
+            
+            prevBtn.disabled = currentSheet === 1;
+            nextBtn.disabled = currentSheet === totalSheets;
+        }
+
+        function switchToSheet(sheetNumber) {
+            if (sheetNumber === currentSheet) return;
+            
+            // Save current selections
+            if (selectedNumbers.size > 0) {
+                const period = document.getElementById('periodSelect').value;
+                sheetSelections.set(currentSheet, {
+                    numbers: new Set(selectedNumbers),
+                    period: period
+                });
+            }
+            
+            currentSheet = sheetNumber;
+            
+            // Load selections for new sheet
+            loadSheetSelections();
+            
+            // Update taken numbers and display
+            updateTakenNumbers();
+            updateNumberGrid();
+            updateNavigator();
+            displaySelectionsTable();
+        }
+
+        function loadSheetSelections() {
+            const saved = sheetSelections.get(currentSheet);
+            if (saved) {
+                selectedNumbers = new Set(saved.numbers);
+                document.getElementById('periodSelect').value = saved.period;
+            } else {
+                selectedNumbers.clear();
+            }
+            updateSelectedDisplay();
+        }
+
+        function previousSheet() {
+            if (currentSheet > 1) {
+                switchToSheet(currentSheet - 1);
+            }
+        }
+
+        function nextSheet() {
+            if (currentSheet < totalSheets) {
+                switchToSheet(currentSheet + 1);
+            }
+        }
+
+        function createNewSheet() {
+            totalSheets++;
+            switchToSheet(totalSheets);
+            showNotification(`สร้างใบใหม่ (ใบที่ ${totalSheets}) เรียบร้อยแล้ว`, 'success');
+        }
+
+        function saveSelections() {
+            const userName = document.getElementById('userName').value.trim();
+            
+            if (!userName) {
+                Swal.fire({
+                    icon: 'warning',
+                    title: 'ข้อมูลไม่ครบ!',
+                    text: 'กรุณากรอกชื่อก่อนบันทึก',
+                    confirmButtonText: 'ตกลง',
+                    background: 'rgba(17, 153, 142, 0.95)',
+                    color: 'white',
+                    confirmButtonColor: '#f59e0b'
+                });
+                return;
+            }
+            
+            if (selectedNumbers.size === 0) {
+                Swal.fire({
+                    icon: 'warning',
+                    title: 'ข้อมูลไม่ครบ!',
+                    text: 'กรุณาเลือกเลขก่อนบันทึก',
+                    confirmButtonText: 'ตกลง',
+                    background: 'rgba(17, 153, 142, 0.95)',
+                    color: 'white',
+                    confirmButtonColor: '#f59e0b'
+                });
+                return;
+            }
+
+            const period = document.getElementById('periodSelect').value;
+            const numbersStr = Array.from(selectedNumbers).sort().join(', ');
+            
+            // Add to selections data
+            const newSelection = {
+                name: userName,
+                numbers: numbersStr,
+                period: period,
+                sheet: currentSheet,
+                type: 'number',
+                timestamp: new Date().toISOString()
+            };
+            
+            // Save to local storage first
+            allSelections.push(newSelection);
+            numberSelectionData.push(newSelection);
+            saveToLocalStorage('numberSelectionData', numberSelectionData);
+            
+            // Show loading alert
+            Swal.fire({
+                title: 'กำลังบันทึกข้อมูล...',
+                text: 'กรุณารอสักครู่',
+                allowOutsideClick: false,
+                allowEscapeKey: false,
+                showConfirmButton: false,
+                background: 'rgba(17, 153, 142, 0.95)',
+                color: 'white',
+                didOpen: () => {
+                    Swal.showLoading();
+                }
+            });
+
+            // Send to Google Sheets using JSONP
+            const script = document.createElement('script');
+            const callbackName = 'numberCallback_' + Date.now();
+            
+            // Create global callback function
+            window[callbackName] = function(response) {
+                if (response.success) {
+                    // Update taken numbers
+                    selectedNumbers.forEach(num => takenNumbers.add(num));
+                    
+                    // Clear current selections
+                    selectedNumbers.clear();
+                    sheetSelections.delete(currentSheet);
+                    
+                    // Update display
+                    updateSelectedDisplay();
+                    updateNumberGrid();
+                    displaySelectionsTable();
+                    
+                    Swal.fire({
+                        icon: 'success',
+                        title: 'บันทึกสำเร็จ!',
+                        text: `บันทึกเลข ${numbersStr} ของ ${userName} เรียบร้อยแล้ว!`,
+                        confirmButtonText: 'ตกลง',
+                        background: 'rgba(17, 153, 142, 0.95)',
+                        color: 'white',
+                        confirmButtonColor: '#4ade80'
+                    });
+                } else {
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'เกิดข้อผิดพลาด!',
+                        text: response.message || 'ไม่สามารถบันทึกข้อมูลได้',
+                        confirmButtonText: 'ตกลง',
+                        background: 'rgba(17, 153, 142, 0.95)',
+                        color: 'white',
+                        confirmButtonColor: '#ef4444'
+                    });
+                }
+                
+                // Clean up
+                document.head.removeChild(script);
+                delete window[callbackName];
+            };
+
+            // Build query string with sheet specification
+            const params = new URLSearchParams({
+                ...newSelection,
+                sheet: 'Sheet2', // Specify Sheet2 for number selections
+                callback: callbackName
+            });
+
+            script.src = `${GOOGLE_SCRIPT_URL}?${params.toString()}`;
+            script.onerror = function() {
+                // Update taken numbers even if Google Sheets fails
+                selectedNumbers.forEach(num => takenNumbers.add(num));
+                
+                // Clear current selections
+                selectedNumbers.clear();
+                sheetSelections.delete(currentSheet);
+                
+                // Update display
+                updateSelectedDisplay();
+                updateNumberGrid();
+                displaySelectionsTable();
+                
+                Swal.fire({
+                    icon: 'info',
+                    title: 'บันทึกในเครื่องแล้ว!',
+                    text: `ไม่สามารถเชื่อมต่อกับ Google Sheets ได้ แต่ข้อมูลได้บันทึกในเครื่องแล้ว`,
+                    confirmButtonText: 'ตกลง',
+                    background: 'rgba(17, 153, 142, 0.95)',
+                    color: 'white',
+                    confirmButtonColor: '#3b82f6'
+                });
+                
+                // Clean up
+                document.head.removeChild(script);
+                delete window[callbackName];
+            };
+
+            document.head.appendChild(script);
+        }
+
+        function updateData() {
+            // Load fresh data from Google Sheets
+            loadDataFromGoogleSheets()
+                .then(() => {
+                    // Update number selection data
+                    allSelections = [...numberSelectionData];
+                    
+                    // Update taken numbers and display
+                    updateTakenNumbers();
+                    updateNumberGrid();
+                    displaySelectionsTable();
+                    
+                    Swal.fire({
+                        icon: 'success',
+                        title: 'อัพเดทสำเร็จ!',
+                        text: 'อัพเดทข้อมูลจาก Google Sheets เรียบร้อยแล้ว',
+                        confirmButtonText: 'ตกลง',
+                        background: 'rgba(17, 153, 142, 0.95)',
+                        color: 'white',
+                        confirmButtonColor: '#4ade80'
+                    });
+                })
+                .catch((error) => {
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'ไม่สามารถอัพเดทได้!',
+                        text: error.message,
+                        confirmButtonText: 'ตกลง',
+                        background: 'rgba(17, 153, 142, 0.95)',
+                        color: 'white',
+                        confirmButtonColor: '#ef4444'
+                    });
+                });
+        }
+
+        function displaySelectionsTable() {
+            const container = document.getElementById('selectionsTableContainer');
+            const period = document.getElementById('periodSelect').value;
+            
+            // Filter selections by current period and sheet
+            const filteredSelections = allSelections.filter(selection => 
+                selection.period === period && selection.sheet === currentSheet
+            );
+            
+            if (filteredSelections.length === 0) {
+                container.innerHTML = '<div class="no-data">ยังไม่มีข้อมูลการเลือกเลข</div>';
+                return;
+            }
+            
+            let tableHTML = `
+                <table class="selections-data">
+                    <thead>
+                        <tr>
+                            <th>ชื่อ</th>
+                            <th>เลขที่เลือก</th>
+                            <th>งวดวันที่</th>
+                            <th>ใบที่</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+            `;
+            
+            filteredSelections.forEach(selection => {
+                tableHTML += `
+                    <tr>
+                        <td>${selection.name}</td>
+                        <td><strong>${selection.numbers}</strong></td>
+                        <td>${selection.period}</td>
+                        <td>${selection.sheet}</td>
+                    </tr>
+                `;
+            });
+            
+            tableHTML += '</tbody></table>';
+            container.innerHTML = tableHTML;
+        }
 
 
-// เริ่มต้นการทำงานเมื่อ DOM โหลดเสร็จสิ้น
-document.addEventListener(&#39;DOMContentLoaded&#39;, initializeApp);
-</script></body></html>
+
+
+
+
+
+        function displayAllSelections() {
+            const container = document.getElementById('allSelectionsContainer');
+            
+            if (allSelections.length === 0) {
+                container.innerHTML = '<div class="no-data">ยังไม่มีข้อมูลการเลือกเลข</div>';
+                return;
+            }
+            
+            // Sort by timestamp (newest first)
+            const sortedSelections = [...allSelections].sort((a, b) => {
+                const dateA = new Date(a.timestamp || '2024-01-01');
+                const dateB = new Date(b.timestamp || '2024-01-01');
+                return dateB - dateA;
+            });
+            
+            let tableHTML = `
+                <table class="selections-data">
+                    <thead>
+                        <tr>
+                            <th>ชื่อ</th>
+                            <th>เลขที่เลือก</th>
+                            <th>งวดที่</th>
+                            <th>ใบที่</th>
+                            <th>วันที่บันทึก</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+            `;
+            
+            sortedSelections.forEach(selection => {
+                const date = selection.timestamp ? 
+                    new Date(selection.timestamp).toLocaleDateString('th-TH') : 
+                    'ไม่ระบุ';
+                
+                tableHTML += `
+                    <tr>
+                        <td>${selection.name}</td>
+                        <td><strong>${selection.numbers}</strong></td>
+                        <td>${selection.period}</td>
+                        <td>${selection.sheet}</td>
+                        <td style="color: rgba(255, 255, 255, 0.7);">${date}</td>
+                    </tr>
+                `;
+            });
+            
+            tableHTML += '</tbody></table>';
+            container.innerHTML = tableHTML;
+        }
+
+        function displayAllSelectionsFromSheet(sheetData) {
+            const container = document.getElementById('allSelectionsContainer');
+            
+            if (sheetData.length === 0) {
+                container.innerHTML = '<div class="no-data">ยังไม่มีข้อมูลการเลือกเลขใน Sheet2</div>';
+                return;
+            }
+            
+            // Sort by timestamp (newest first)
+            const sortedSelections = [...sheetData].sort((a, b) => {
+                const dateA = new Date(a.timestamp || '2024-01-01');
+                const dateB = new Date(b.timestamp || '2024-01-01');
+                return dateB - dateA;
+            });
+            
+            let tableHTML = `
+                <table class="selections-data">
+                    <thead>
+                        <tr>
+                            <th>ชื่อ</th>
+                            <th>เลขที่เลือก</th>
+                            <th>งวดที่</th>
+                            <th>ใบที่</th>
+                            <th>วันที่บันทึก</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+            `;
+            
+            sortedSelections.forEach(selection => {
+                const date = selection.timestamp ? 
+                    new Date(selection.timestamp).toLocaleDateString('th-TH') : 
+                    'ไม่ระบุ';
+                
+                tableHTML += `
+                    <tr>
+                        <td>${selection.name}</td>
+                        <td><strong>${selection.numbers}</strong></td>
+                        <td>${selection.period}</td>
+                        <td>${selection.sheet}</td>
+                        <td style="color: rgba(255, 255, 255, 0.7);">${date}</td>
+                    </tr>
+                `;
+            });
+            
+            tableHTML += '</tbody></table>';
+            container.innerHTML = tableHTML;
+        }
+
+        // Tab switching function
+        function switchTab(tabName) {
+            // Remove active class from all tabs and content
+            document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+            document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
+            
+            // Add active class to selected tab and content
+            if (tabName === 'summary') {
+                document.querySelector('.tab-btn[onclick="switchTab(\'summary\')"]').classList.add('active');
+                document.getElementById('summaryTab').classList.add('active');
+            } else if (tabName === 'rankings') {
+                document.querySelector('.tab-btn[onclick="switchTab(\'rankings\')"]').classList.add('active');
+                document.getElementById('rankingsTab').classList.add('active');
+            }
+        }
+
+        // Winner Search Page
+        function showWinnerSearchPage() {
+            const container = document.querySelector('.container');
+            container.innerHTML = `
+                <div class="winner-page">
+                    <div class="page-header">
+                        <button class="back-btn" onclick="showMainMenu()">← กลับ</button>
+                        <h1 class="page-title">ค้นหาผู้โชคดี</h1>
+                    </div>
+                    
+                    <div class="search-section">
+                        <h3 class="section-title">🔍 ค้นหาเลขที่ออกรางวัล</h3>
+                        <div class="search-form">
+                            <div class="form-group">
+                                <label class="form-label">เลขที่ต้องการค้นหา</label>
+                                <input type="text" id="searchNumber" class="form-input" placeholder="กรอกเลข 2 หลัก เช่น 01, 25, 99" maxlength="2">
+                            </div>
+                            <button class="search-btn" onclick="searchWinners()">🔍 ค้นหาผู้โชคดี</button>
+                        </div>
+                    </div>
+
+                    <div id="winnersResultSection" class="winners-result" style="display: none;">
+                        <div class="summary-table">
+                            <h3 class="table-title">🏆 ผลการค้นหาผู้โชคดี</h3>
+                            <div id="winnersTableContainer"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="notification" class="notification hidden">
+                    <div class="notification-content">
+                        <span id="notificationText"></span>
+                        <button onclick="hideNotification()" class="notification-close">×</button>
+                    </div>
+                </div>
+            `;
+        }
+
+        function searchWinners() {
+            const searchNumber = document.getElementById('searchNumber').value.trim();
+            
+            if (!searchNumber) {
+                Swal.fire({
+                    icon: 'warning',
+                    title: 'ข้อมูลไม่ครบ!',
+                    text: 'กรุณากรอกเลขที่ต้องการค้นหา',
+                    confirmButtonText: 'ตกลง',
+                    background: 'rgba(17, 153, 142, 0.95)',
+                    color: 'white',
+                    confirmButtonColor: '#f59e0b'
+                });
+                return;
+            }
+
+            // Validate number format (2 digits)
+            if (!/^\d{1,2}$/.test(searchNumber)) {
+                Swal.fire({
+                    icon: 'warning',
+                    title: 'รูปแบบไม่ถูกต้อง!',
+                    text: 'กรุณากรอกเลข 1-2 หลัก เช่น 1, 01, 25, 99',
+                    confirmButtonText: 'ตกลง',
+                    background: 'rgba(17, 153, 142, 0.95)',
+                    color: 'white',
+                    confirmButtonColor: '#f59e0b'
+                });
+                return;
+            }
+
+            // Format number to 2 digits
+            const formattedNumber = searchNumber.padStart(2, '0');
+
+            // Show loading message
+            Swal.fire({
+                title: 'กำลังค้นหาผู้โชคดี...',
+                text: 'กรุณารอสักครู่',
+                allowOutsideClick: false,
+                allowEscapeKey: false,
+                showConfirmButton: false,
+                background: 'rgba(17, 153, 142, 0.95)',
+                color: 'white',
+                didOpen: () => {
+                    Swal.showLoading();
+                }
+            });
+
+            // Search from local data only (no Google Sheets interaction)
+            setTimeout(() => {
+                const winners = findWinners(numberSelectionData, formattedNumber);
+                displayWinners(winners, formattedNumber);
+                
+                Swal.fire({
+                    icon: 'success',
+                    title: 'ค้นหาเสร็จสิ้น!',
+                    text: `พบผู้โชคดี ${winners.length} คน สำหรับเลข ${formattedNumber}`,
+                    confirmButtonText: 'ตกลง',
+                    background: 'rgba(17, 153, 142, 0.95)',
+                    color: 'white',
+                    confirmButtonColor: '#4ade80'
+                });
+            }, 500);
+        }
+
+        function findWinners(data, searchNumber) {
+            const winners = [];
+            
+            data.forEach(selection => {
+                if (selection.numbers && selection.numbers.includes(searchNumber)) {
+                    // Check if the exact number matches (not just substring)
+                    const numbersArray = selection.numbers.split(', ');
+                    if (numbersArray.includes(searchNumber)) {
+                        winners.push({
+                            name: selection.name,
+                            matchingNumber: searchNumber,
+                            period: selection.period,
+                            sheet: selection.sheet,
+                            allNumbers: selection.numbers
+                        });
+                    }
+                }
+            });
+            
+            return winners;
+        }
+
+        function displayWinners(winners, searchNumber) {
+            const container = document.getElementById('winnersTableContainer');
+            const resultSection = document.getElementById('winnersResultSection');
+            
+            resultSection.style.display = 'block';
+            
+            if (winners.length === 0) {
+                container.innerHTML = `<div class="no-data">ไม่พบผู้โชคดีสำหรับเลข ${searchNumber}</div>`;
+                return;
+            }
+            
+            let tableHTML = `
+                <div style="text-align: center; margin-bottom: 1rem; color: white; font-weight: 600; font-size: 1.1rem;">
+                    🎉 พบผู้โชคดี ${winners.length} คน สำหรับเลข ${searchNumber} 🎉
+                </div>
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>ชื่อ</th>
+                            <th>เลขที่ตรงกับที่ค้นหา</th>
+                            <th>งวดที่</th>
+                            <th>ใบที่</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+            `;
+            
+            winners.forEach(winner => {
+                tableHTML += `
+                    <tr style="background: rgba(76, 222, 128, 0.1); border: 1px solid rgba(76, 222, 128, 0.3);">
+                        <td style="color: white; font-weight: 600;">${winner.name}</td>
+                        <td style="color: white; font-weight: 700; font-size: 1.1rem;">${winner.matchingNumber}</td>
+                        <td style="color: white; font-weight: 600;">${winner.period}</td>
+                        <td style="color: white; font-weight: 600;">${winner.sheet}</td>
+                    </tr>
+                `;
+            });
+            
+            tableHTML += '</tbody></table>';
+            container.innerHTML = tableHTML;
+        }
+
+        // Initialize the SDK
+        document.addEventListener('DOMContentLoaded', async () => {
+            if (window.elementSdk) {
+                await window.elementSdk.init({
+                    defaultConfig,
+                    render,
+                    mapToCapabilities,
+                    mapToEditPanelValues
+                });
+            }
+            
+            // Initial render
+            await render(defaultConfig);
+        });
+    </script>
+ <script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'9926e2c24625d326',t:'MTc2MTExMzk5NS4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+</html>
